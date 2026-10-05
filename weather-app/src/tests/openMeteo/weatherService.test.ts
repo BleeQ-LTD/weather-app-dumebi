@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getForecast, getWeatherDescription } from "../../weatherService/weatherService";
+import {
+  FORECAST_DAYS,
+  getForecast,
+  getWeatherDescription,
+} from "../../weatherService/weatherService";
 import type { OpenMeteoForecastResponse } from "../../weatherService/weatherTypes";
 
 // Replaces fetch with a fake that returns the given body
@@ -24,6 +28,7 @@ const CURRENT_INDEX = 14; // the current time below is 14:15, so hour index 14
 // Whole numbers everywhere so assertions are exact
 function makeBody(): OpenMeteoForecastResponse {
   return {
+    utc_offset_seconds: 3600, // Lagos is UTC+1
     current: {
       time: "2026-10-01T14:15",
       temperature_2m: 29.4,
@@ -124,14 +129,21 @@ describe("TC-OM-001 forecast API: the request", () => {
     );
   });
 
-  it("requests 10 days in the location's own timezone", async () => {
+  it("requests 8 days of forecast", async () => {
     const fetchMock = mockFetch(makeBody());
 
     await getForecast(6.5244, 3.3792);
 
-    const url = requestedUrl(fetchMock);
-    expect(url.searchParams.get("forecast_days")).toBe("8");
-    expect(url.searchParams.get("timezone")).toBe("auto");
+    expect(requestedUrl(fetchMock).searchParams.get("forecast_days")).toBe("8");
+    expect(FORECAST_DAYS).toBe(8);
+  });
+
+  it("asks for times in the location's own timezone", async () => {
+    const fetchMock = mockFetch(makeBody());
+
+    await getForecast(6.5244, 3.3792);
+
+    expect(requestedUrl(fetchMock).searchParams.get("timezone")).toBe("auto");
   });
 });
 
@@ -183,7 +195,6 @@ describe("TC-OM-001 and TC-OM-006 forecast API: today's 24 hours", () => {
 
     const { hourly } = await getForecast(6.5244, 3.3792);
 
-    // The current hour (14:00) is somewhere in the middle, not the first entry
     expect(hourly.map((h) => h.time)).toContain("2026-10-01T14:00");
     expect(hourly[0].time).not.toBe("2026-10-01T14:00");
   });
@@ -215,7 +226,7 @@ describe("TC-OM-001 and TC-OM-006 forecast API: today's 24 hours", () => {
     const { hourly } = await getForecast(6.5244, 3.3792);
 
     hourly.forEach((hour, offset) => {
-      const i = offset; // hourly[0] is today's 00:00, which is index 0 in the raw data
+      const i = offset;
       expect(hour.time).toBe(body.hourly.time[i]);
       expect(hour.temperature).toBe(body.hourly.temperature_2m[i]);
       expect(hour.weatherCode).toBe(body.hourly.weather_code[i]);
@@ -309,6 +320,26 @@ describe("TC-OM-006 forecast data integrity: detail tiles", () => {
   });
 });
 
+describe("forecast API: the location's UTC offset", () => {
+  it("keeps the offset, which tells the app when the location's hour or day changes", async () => {
+    mockFetch(makeBody());
+
+    const forecast = await getForecast(6.5244, 3.3792);
+
+    expect(forecast.utcOffsetSeconds).toBe(3600);
+  });
+
+  it("falls back to an offset of 0 if the API leaves it out", async () => {
+    const body: Partial<OpenMeteoForecastResponse> = makeBody();
+    delete body.utc_offset_seconds;
+    mockFetch(body);
+
+    const forecast = await getForecast(6.5244, 3.3792);
+
+    expect(forecast.utcOffsetSeconds).toBe(0);
+  });
+});
+
 describe("TC-OM-005 invalid coordinates", () => {
   it("throws with the status when the API rejects the coordinates", async () => {
     mockFetch(
@@ -343,7 +374,7 @@ describe("TC-OM-007 API failure", () => {
     await expect(getForecast(6.5244, 3.3792)).rejects.toThrow("Failed to fetch");
   });
 
-  it("rejects when the request times out", async () => {
+  it("passes a timeout error from the network layer straight through to the caller", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockRejectedValue(new DOMException("The operation timed out", "TimeoutError"))

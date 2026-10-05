@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatForecastTitle,
   formatTime,
   getCompassDirection,
   getDayLabel,
@@ -100,6 +101,14 @@ describe("time and day labels", () => {
     expect(getDayLabel("2026-10-02", 0)).toBe("Today");
     expect(getDayLabel("2026-10-02", 1)).toBe("Fri");
     expect(getDayLabel("2026-10-03", 2)).toBe("Sat");
+  });
+});
+
+describe("formatForecastTitle", () => {
+  it("is built from the number of days, so the title always matches the data", () => {
+    expect(formatForecastTitle(10)).toBe("10-day forecast");
+    expect(formatForecastTitle(8)).toBe("8-day forecast");
+    expect(formatForecastTitle(1)).toBe("1-day forecast");
   });
 });
 

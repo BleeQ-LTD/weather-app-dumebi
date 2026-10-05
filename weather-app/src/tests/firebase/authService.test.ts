@@ -83,6 +83,8 @@ describe("TC-FB-003 invalid input and authentication errors", () => {
     ["auth/invalid-email", "Please enter a valid email address."],
     ["auth/email-already-in-use", "An account with this email already exists."],
     ["auth/network-request-failed", "Unable to connect. Please check your internet connection."],
+    ["auth/operation-not-allowed", "Email/password sign-in isn't enabled for this app."],
+    ["auth/configuration-not-found", "Email/password sign-in isn't enabled for this app."],
   ])("sign-up maps %s to a friendly message", async (code, message) => {
     createUserMock.mockRejectedValue({ code });
 

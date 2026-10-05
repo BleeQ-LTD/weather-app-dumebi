@@ -1,22 +1,27 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  DEFAULT_PLACE_NAME,
   FALLBACK_LOCATION,
   getCurrentCoordinates,
-  getCurrentLocation,
   getPlaceName,
+  locateUser,
 } from "../../locationService/geolocationService";
 
+type SuccessCallback = (position: unknown) => void;
+type ErrorCallback = (error: { code: number }) => void;
+
 function stubGeolocationSuccess(latitude: number, longitude: number) {
-  const getCurrentPosition = vi.fn((success: (p: unknown) => void) =>
-    success({ coords: { latitude, longitude } })
+  const getCurrentPosition = vi.fn(
+    (success: SuccessCallback, _error?: ErrorCallback, _options?: unknown) =>
+      success({ coords: { latitude, longitude } })
   );
   vi.stubGlobal("navigator", { geolocation: { getCurrentPosition } });
   return getCurrentPosition;
 }
 
 function stubGeolocationError(code: number) {
-  const getCurrentPosition = vi.fn(
-    (_success: unknown, failure: (e: { code: number }) => void) => failure({ code })
+  const getCurrentPosition = vi.fn((_success: SuccessCallback, error?: ErrorCallback) =>
+    error?.({ code })
   );
   vi.stubGlobal("navigator", { geolocation: { getCurrentPosition } });
 }
@@ -31,7 +36,15 @@ function mockFetch(body: unknown, init: { ok?: boolean; status?: number } = {}) 
   return fetchMock;
 }
 
+// A request that never gets an answer
+function stubFetchThatNeverAnswers() {
+  const fetchMock = vi.fn((_url: string, _init?: { signal?: AbortSignal }) => new Promise(() => {}));
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -127,32 +140,107 @@ describe("getPlaceName", () => {
   });
 });
 
-describe("getCurrentLocation", () => {
-  it("combines the device position with the place name", async () => {
-    stubGeolocationSuccess(6.4281, 3.4219);
+describe("getPlaceName timeout (a stalled lookup must not hang)", () => {
+  it("gives up with null after 4 seconds if the lookup never answers", async () => {
+    vi.useFakeTimers();
+    stubFetchThatNeverAnswers();
+
+    let settled = false;
+    const result = getPlaceName(6.4281, 3.4219).then((name) => {
+      settled = true;
+      return name;
+    });
+
+    await vi.advanceTimersByTimeAsync(3999);
+    expect(settled).toBe(false); // still waiting just before 4 seconds
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await result).toBeNull();
+    expect(settled).toBe(true);
+  });
+
+  it("cancels the request when it gives up", async () => {
+    vi.useFakeTimers();
+    const fetchMock = stubFetchThatNeverAnswers();
+
+    const result = getPlaceName(6.4281, 3.4219, 50);
+    await vi.advanceTimersByTimeAsync(50);
+    await result;
+
+    expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(true);
+  });
+
+  it("returns a quick answer without waiting for the timeout", async () => {
     mockFetch({ city: "Lagos" });
 
-    expect(await getCurrentLocation()).toEqual({
+    // Real timers: this would take 4 seconds if it waited for the timeout
+    expect(await getPlaceName(6.4281, 3.4219)).toBe("Lagos");
+  });
+});
+
+describe("locateUser (the weather can load before the name is known)", () => {
+  it("reports the position straight away, even while the name lookup is stalled", async () => {
+    vi.useFakeTimers();
+    stubGeolocationSuccess(6.4281, 3.4219);
+    stubFetchThatNeverAnswers();
+    const onLocation = vi.fn();
+
+    const finished = locateUser(onLocation);
+    await vi.advanceTimersByTimeAsync(0); // let the position arrive; the name lookup is still stuck
+
+    expect(onLocation).toHaveBeenCalledTimes(1);
+    expect(onLocation).toHaveBeenLastCalledWith({
+      name: DEFAULT_PLACE_NAME,
+      latitude: 6.4281,
+      longitude: 3.4219,
+    });
+
+    // Once the lookup times out, it finishes without ever reporting a name
+    await vi.advanceTimersByTimeAsync(4000);
+    await finished;
+    expect(onLocation).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports the position first, then the same position with its name", async () => {
+    stubGeolocationSuccess(6.4281, 3.4219);
+    mockFetch({ city: "Lagos" });
+    const onLocation = vi.fn();
+
+    await locateUser(onLocation);
+
+    expect(onLocation).toHaveBeenCalledTimes(2);
+    expect(onLocation).toHaveBeenNthCalledWith(1, {
+      name: DEFAULT_PLACE_NAME,
+      latitude: 6.4281,
+      longitude: 3.4219,
+    });
+    expect(onLocation).toHaveBeenNthCalledWith(2, {
       name: "Lagos",
       latitude: 6.4281,
       longitude: 3.4219,
     });
   });
 
-  it("still works, calling it 'My Location', when the name lookup fails", async () => {
+  it("keeps working, as 'My Location', when the name lookup fails", async () => {
     stubGeolocationSuccess(6.4281, 3.4219);
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    const onLocation = vi.fn();
 
-    expect(await getCurrentLocation()).toEqual({
-      name: "My Location",
+    await locateUser(onLocation);
+
+    expect(onLocation).toHaveBeenCalledTimes(1);
+    expect(onLocation).toHaveBeenLastCalledWith({
+      name: DEFAULT_PLACE_NAME,
       latitude: 6.4281,
       longitude: 3.4219,
     });
   });
 
-  it("rejects when permission is denied", async () => {
+  it("rejects, without reporting any location, when permission is denied", async () => {
     stubGeolocationError(1);
+    const onLocation = vi.fn();
 
-    await expect(getCurrentLocation()).rejects.toThrow("permission was denied");
+    await expect(locateUser(onLocation)).rejects.toThrow("permission was denied");
+    expect(onLocation).not.toHaveBeenCalled();
   });
 });
