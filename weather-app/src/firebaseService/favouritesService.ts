@@ -2,6 +2,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   orderBy,
   query,
@@ -9,10 +10,11 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { makeFavouriteId } from "./favouriteId";
 import type { Location } from "../locationService/locationTypes";
 import type { FavouriteLocation } from "./firebaseTypes";
 
-// Data at: users/{uid}/favourites/{favouriteId}
+// Data lives at: users/{uid}/favourites/{favouriteId}
 
 const NOT_SIGNED_IN = "You must be signed in to manage favourites.";
 
@@ -21,9 +23,7 @@ function requireUid(uid: string | null | undefined): string {
   return uid;
 }
 
-export function makeFavouriteId(location: Pick<Location, "latitude" | "longitude">): string {
-  return `${location.latitude.toFixed(4)}_${location.longitude.toFixed(4)}`;
-}
+export { makeFavouriteId };
 
 export async function addFavourite(
   uid: string | null | undefined,
@@ -31,20 +31,27 @@ export async function addFavourite(
 ): Promise<FavouriteLocation> {
   const userId = requireUid(uid);
   const id = makeFavouriteId(location);
+  const ref = doc(db, "users", userId, "favourites", id);
 
-  await setDoc(doc(db, "users", userId, "favourites", id), {
+  const favourite: FavouriteLocation = {
+    id,
+    name: location.name,
+    latitude: location.latitude,
+    longitude: location.longitude,
+  };
+
+  // Already saved: leave it alone so the original createdAt isn't overwritten
+  const existing = await getDoc(ref);
+  if (existing.exists()) return favourite;
+
+  await setDoc(ref, {
     name: location.name,
     latitude: location.latitude,
     longitude: location.longitude,
     createdAt: serverTimestamp(),
   });
 
-  return {
-    id,
-    name: location.name,
-    latitude: location.latitude,
-    longitude: location.longitude,
-  };
+  return favourite;
 }
 
 export async function getFavourites(

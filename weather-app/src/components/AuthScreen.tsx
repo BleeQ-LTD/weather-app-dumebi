@@ -4,7 +4,11 @@ import { getAuthErrorMessage, signIn, signUp } from "../firebaseService/authServ
 
 type Mode = "signIn" | "signUp";
 
-function AuthScreen() {
+interface AuthScreenProps {
+  onContinueAsGuest: () => void;
+}
+
+function AuthScreen({ onContinueAsGuest }: AuthScreenProps) {
   const [mode, setMode] = useState<Mode>("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +33,7 @@ function AuthScreen() {
       }
       // On success the app's auth observer swaps this screen for the weather screen
     } catch (err) {
-      console.error("Auth failed:", err);
+      console.error("Auth failed, code:", (err as { code?: string }).code, err);
       setError(getAuthErrorMessage(err));
     } finally {
       setSubmitting(false);
@@ -101,6 +105,20 @@ function AuthScreen() {
             {submitting ? "Please wait..." : mode === "signIn" ? "Sign in" : "Create account"}
           </button>
         </form>
+
+        <div className="auth-divider">
+          <span>or</span>
+        </div>
+
+        <div className="guest-option">
+          <button type="button" className="btn btn-ghost" onClick={onContinueAsGuest}>
+            Continue as guest
+          </button>
+          <p className="muted small">
+            Guests can search any city and see the full forecast. Favourite locations are only saved
+            to an account.
+          </p>
+        </div>
       </div>
     </div>
   );

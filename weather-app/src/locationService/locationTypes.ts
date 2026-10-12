@@ -6,7 +6,7 @@ export interface Location {
 
 export interface PlaceSuggestion {
   id: number;
-  label: string;
+  label: string; 
   location: Location; 
 }
 
@@ -16,7 +16,8 @@ export interface GeocodingResult {
   latitude: number;
   longitude: number;
   country?: string;
-  admin1?: string; 
+  admin1?: string;
+  admin2?: string;
 }
 
 export interface GeocodingResponse {

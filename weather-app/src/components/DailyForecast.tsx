@@ -1,5 +1,10 @@
 import type { DailyWeather } from "../weatherService/weatherTypes";
-import { getDayLabel, getRangeBar, getWeatherIcon } from "../weatherService/weatherUtils";
+import {
+  formatForecastTitle,
+  getDayLabel,
+  getRangeBar,
+  getWeatherIcon,
+} from "../weatherService/weatherUtils";
 
 interface DailyForecastProps {
   days: DailyWeather[];
@@ -11,7 +16,7 @@ function DailyForecast({ days }: DailyForecastProps) {
 
   return (
     <section className="panel">
-      <h2 className="panel-title">10-day forecast</h2>
+      <h2 className="panel-title">{formatForecastTitle(days.length)}</h2>
 
       <ul>
         {days.map((day, index) => {

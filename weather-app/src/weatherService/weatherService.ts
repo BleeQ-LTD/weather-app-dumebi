@@ -79,6 +79,10 @@ const DAILY_VARIABLES = [
 
 const HOURS_TO_SHOW = 24;
 
+// How many days are requested, and shown as the "10-day forecast"
+export const FORECAST_DAYS = 10;
+
+// One request returns everything the screen needs: current, hourly and daily data
 export async function getForecast(latitude: number, longitude: number): Promise<Forecast> {
   const url =
     `${BASE_URL}?latitude=${latitude}` +
@@ -86,8 +90,8 @@ export async function getForecast(latitude: number, longitude: number): Promise<
     `&current=${CURRENT_VARIABLES.join(",")}` +
     `&hourly=${HOURLY_VARIABLES.join(",")}` +
     `&daily=${DAILY_VARIABLES.join(",")}` +
-    `&forecast_days=8` +
-    `&timezone=auto`; 
+    `&forecast_days=${FORECAST_DAYS}` +
+    `&timezone=auto`; // times in the location's own timezone, so "today" is correct there
 
   const response = await fetch(url);
 
@@ -103,6 +107,7 @@ export async function getForecast(latitude: number, longitude: number): Promise<
 function mapForecast(data: OpenMeteoForecastResponse): Forecast {
   const { current, hourly, daily } = data;
 
+  // Index of the current hour (used for the detail tiles and the next-24h rain total)
   const currentHour = `${current.time.slice(0, 13)}:00`;
   const found = hourly.time.indexOf(currentHour);
   const start = found === -1 ? 0 : found;
@@ -122,6 +127,7 @@ function mapForecast(data: OpenMeteoForecastResponse): Forecast {
     isDay: current.is_day === 1,
   };
 
+  // Today's 24 hours, from 00:00 to 23:00 (not "from now")
   const todayStart = hourly.time.indexOf(`${current.time.slice(0, 10)}T00:00`);
   const dayStart = todayStart === -1 ? 0 : todayStart;
 
@@ -150,6 +156,7 @@ function mapForecast(data: OpenMeteoForecastResponse): Forecast {
     sunset: daily.sunset[i],
   }));
 
+  // Detail tiles use the values for the current hour
   let precipitationNext24h = 0;
   for (let i = start; i < Math.min(end, hourly.time.length); i++) {
     precipitationNext24h += hourly.precipitation[i] ?? 0;
@@ -169,5 +176,6 @@ function mapForecast(data: OpenMeteoForecastResponse): Forecast {
     hourly: hourlyEntries,
     daily: dailyEntries,
     details,
+    utcOffsetSeconds: data.utc_offset_seconds ?? 0,
   };
 }

@@ -34,28 +34,32 @@ export interface DailyWeather {
   sunset: string;
 }
 
+// Values for the detail tiles, taken at the current hour
 export interface WeatherDetails {
   uvIndex: number | null;
   visibilityKm: number | null;
   dewPoint: number | null;
-  precipitationNext24h: number; 
+  precipitationNext24h: number; // mm
 }
 
 export interface Forecast {
   current: CurrentWeather;
-  hourly: HourlyWeather[]; 
-  daily: DailyWeather[]; 
+  hourly: HourlyWeather[]; // today's 24 hours, 00:00 to 23:00
+  daily: DailyWeather[]; // 10 days, starting with today
   details: WeatherDetails;
+  utcOffsetSeconds: number; // the location's offset from UTC, so we know when its hour or day changes
 }
 
+// ---------- Raw Open-Meteo response ----------
 
 export interface OpenMeteoForecastResponse {
+  utc_offset_seconds: number;
   current: {
     time: string;
     temperature_2m: number;
     relative_humidity_2m: number;
     apparent_temperature: number;
-    is_day: number;
+    is_day: number; // 1 = day, 0 = night
     weather_code: number;
     wind_speed_10m: number;
     wind_direction_10m: number;
@@ -70,7 +74,7 @@ export interface OpenMeteoForecastResponse {
     precipitation_probability: (number | null)[];
     precipitation: (number | null)[];
     uv_index: (number | null)[];
-    visibility: (number | null)[];
+    visibility: (number | null)[]; // metres
     dew_point_2m: (number | null)[];
   };
   daily: {
