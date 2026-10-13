@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { logOut } from "../firebaseService/authService";
-import { makeFavouriteId } from "../firebaseService/favouritesService";
-import { FALLBACK_LOCATION } from "../locationService/geolocationService";
+import { isSamePlace, makeFavouriteId } from "../firebaseService/favouriteId"; // CHANGED: import path + isSamePlace
 import type { Location } from "../locationService/locationTypes";
 import { useCurrentLocation } from "../hooks/useCurrentLocation";
 import { useFavourites } from "../hooks/useFavourites";
 import { useForecast } from "../hooks/useForecast";
 import LocationSearch from "./LocationSearch";
 import FavouriteLocations from "./FavouriteLocations";
+import GuestInfo from "./GuestInfo";
 import CurrentConditions from "./CurrentConditions";
 import HourlyForecast from "./HourlyForecast";
 import DailyForecast from "./DailyForecast";
@@ -16,27 +16,67 @@ import DetailTiles from "./DetailTiles";
 import SidebarToggle from "./SidebarToggle";
 
 interface WeatherScreenProps {
-  user: User;
+  user: User | null; // null means the visitor is a guest
+  onRequestSignIn: () => void;
 }
 
-function WeatherScreen({ user }: WeatherScreenProps) {
+function WeatherScreen({ user, onRequestSignIn }: WeatherScreenProps) {
+  const isGuest = user === null;
+
   const { status, myLocation, notice } = useCurrentLocation();
   const [selected, setSelected] = useState<Location | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Open on desktop, closed on phone-width screens (where it would push the weather down)
-  const [sidebarOpen, setSidebarOpen] = useState(
-    () => window.matchMedia("(min-width: 561px)").matches
-  );
+  // CHANGED: no FALLBACK_LOCATION; null if nothing could be detected
+  const location = selected ?? myLocation;
 
-  // What's on screen: the user's pick, else where they are, else the fallback (once detection ends)
-  const location = selected ?? myLocation ?? (status === "ready" ? FALLBACK_LOCATION : null);
+  const { forecast, loading, error, refreshFailed } = useForecast(location);
 
-  const { forecast, loading, error } = useForecast(location);
-  const { favourites, error: favouritesError, add, remove } = useFavourites(user.uid);
+  // CHANGED: also read `loaded` from the hook
+  const {
+    favourites,
+    loaded: favouritesLoaded,
+    error: favouritesError,
+    add,
+    remove,
+  } = useFavourites(user?.uid ?? null);
 
-  const currentId = location ? makeFavouriteId(location) : "";
-  const isFavourite = favourites.some((f) => f.id === currentId);
-  const isMyLocation = Boolean(myLocation && currentId === makeFavouriteId(myLocation));
+  // CHANGED: "Saved" is decided by distance, so it works after a reload
+  const savedMatches = location ? favourites.filter((f) => isSamePlace(f, location)) : [];
+  const isFavourite = savedMatches.length > 0;
+  const currentId = savedMatches[0]?.id ?? (location ? makeFavouriteId(location) : "");
+  const isMyLocation = Boolean(myLocation && location && isSamePlace(myLocation, location));
+
+  // While the overlay is open: Escape closes it and the page behind it doesn't scroll
+  useEffect(() => {
+    if (!sidebarOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setSidebarOpen(false);
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [sidebarOpen]);
+
+  // Picking a place closes the overlay so the weather is visible straight away
+  function handleSelect(next: Location) {
+    setSelected(next);
+    setSidebarOpen(false);
+  }
+
+  function handleToggleFavourite() {
+    if (!location) return;
+    if (isGuest) onRequestSignIn();
+    else if (isFavourite) savedMatches.forEach((f) => remove(f.id)); // CHANGED: also clears old duplicates
+    else add(location);
+  }
 
   async function handleSignOut() {
     try {
@@ -47,58 +87,91 @@ function WeatherScreen({ user }: WeatherScreenProps) {
   }
 
   return (
-    <div className={sidebarOpen ? "app" : "app sidebar-closed"}>
-      <div className="toolbar">
-        <SidebarToggle open={sidebarOpen} onToggle={() => setSidebarOpen((open) => !open)} />
-      </div>
+    <div className="app">
+      {/* Floating, so it is always reachable (including on phones) */}
+      <SidebarToggle open={sidebarOpen} onToggle={() => setSidebarOpen((open) => !open)} />
 
-      {/* hidden (not removed) so the search box keeps what you typed */}
-      <aside className="sidebar" hidden={!sidebarOpen}>
-        <LocationSearch onSelect={setSelected} />
+      {sidebarOpen && (
+        <div className="backdrop" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+      )}
+
+      <aside className={sidebarOpen ? "sidebar open" : "sidebar"} aria-label="Locations and account">
+        <LocationSearch onSelect={handleSelect} />
 
         {myLocation && (
           <button
             type="button"
             className={isMyLocation ? "location-row active" : "location-row"}
-            onClick={() => setSelected(myLocation)}
+            onClick={() => handleSelect(myLocation)}
           >
             <span>📍 My Location</span>
             <span className="muted small">{myLocation.name}</span>
           </button>
         )}
 
-        {notice && <p className="notice">{notice}</p>}
+        {/* CHANGED: the notice was removed from the sidebar (it is in <main> now) */}
 
-        <FavouriteLocations
-          favourites={favourites}
-          activeId={currentId}
-          onSelect={setSelected}
-          onRemove={remove}
-        />
-        {favouritesError && <p className="error-text">{favouritesError}</p>}
+        {isGuest ? (
+          <GuestInfo onRequestSignIn={onRequestSignIn} />
+        ) : (
+          <>
+            <FavouriteLocations
+              favourites={favourites}
+              activeId={currentId}
+              onSelect={handleSelect}
+              onRemove={remove}
+            />
+            {favouritesError && <p className="error-text">{favouritesError}</p>}
+          </>
+        )}
 
         <div className="sidebar-footer">
-          <span className="muted small">{user.email}</span>
-          <button type="button" className="btn btn-ghost" onClick={handleSignOut}>
-            Sign out
-          </button>
+          {user ? (
+            <>
+              <span className="muted small">{user.email}</span>
+              <button type="button" className="btn btn-ghost" onClick={handleSignOut}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <span className="muted small">Browsing as a guest</span>
+          )}
         </div>
       </aside>
 
       <main className="main">
-        {!location && <p className="status">Finding your location...</p>}
+        {/* CHANGED: notice now lives in the main view so phones see it too */}
+        {notice && (
+          <p className="notice" role="status">
+            {notice}
+          </p>
+        )}
+
+        {/* CHANGED: loading / nothing-detected messages no longer depend on FALLBACK_LOCATION */}
+        {!location && status === "detecting" && <p className="status">Finding your location...</p>}
+        {!location && status === "ready" && (
+          <p className="status">Search for a city to see its weather.</p>
+        )}
         {location && loading && <p className="status">Loading weather...</p>}
         {location && !loading && error && <p className="status error-text">{error}</p>}
 
         {location && forecast && !loading && !error && (
           <>
+            {refreshFailed && (
+              <p className="notice">
+                The forecast could not be refreshed and may be out of date.
+              </p>
+            )}
+
             <CurrentConditions
               name={location.name}
               isMyLocation={isMyLocation}
               current={forecast.current}
               today={forecast.daily[0]}
               isFavourite={isFavourite}
-              onToggleFavourite={() => (isFavourite ? remove(currentId) : add(location))}
+              isGuest={isGuest}
+              saveDisabled={!isGuest && !favouritesLoaded} // CHANGED: this is the missing prop
+              onToggleFavourite={handleToggleFavourite}
             />
 
             <HourlyForecast hours={forecast.hourly} currentTime={forecast.current.time} />

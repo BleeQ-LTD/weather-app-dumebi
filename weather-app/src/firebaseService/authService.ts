@@ -7,6 +7,7 @@ import {
 import type { User, Unsubscribe } from "firebase/auth";
 import { auth } from "./firebase";
 
+// An error with a Firebase-style code and a message that is safe to show to users
 export class AuthError extends Error {
   code: string;
 
@@ -27,8 +28,12 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   "auth/email-already-in-use": "An account with this email already exists.",
   "auth/wrong-password": "Incorrect email or password.",
   "auth/user-not-found": "Incorrect email or password.",
+  // Newer Firebase projects return this for both wrong password and unknown email
   "auth/invalid-credential": "Incorrect email or password.",
   "auth/too-many-requests": "Too many attempts. Please try again later.",
+  // Project setup problems: Email/Password isn't switched on in the Firebase console
+  "auth/operation-not-allowed": "Email/password sign-in isn't enabled for this app.",
+  "auth/configuration-not-found": "Email/password sign-in isn't enabled for this app.",
   "auth/network-request-failed":
     "Unable to connect. Please check your internet connection.",
 };
@@ -45,6 +50,7 @@ function getErrorCode(error: unknown): string {
   return "unknown";
 }
 
+// Turns any error into a friendly message (never exposes raw Firebase text)
 export function getAuthErrorMessage(error: unknown): string {
   return AUTH_ERROR_MESSAGES[getErrorCode(error)] ?? GENERIC_MESSAGE;
 }

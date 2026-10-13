@@ -1,5 +1,56 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { searchPlaces } from "../../locationService/locationService";
+import { toSuggestions, type GeocodingResult } from "../../locationService/locationService";
+
+const make = (over: Partial<GeocodingResult> & { id: number }): GeocodingResult =>
+  ({
+    name: "Abuja",
+    admin1: "FCT",
+    country: "Nigeria",
+    latitude: 9.0765,
+    longitude: 7.3986,
+    ...over,
+  }) as GeocodingResult;
+
+describe("toSuggestions", () => {
+  it("removes near-duplicates with the same label", () => {
+    const result = toSuggestions([
+      make({ id: 1 }),
+      make({ id: 2, latitude: 9.0801, longitude: 7.4012 }),
+    ]);
+    expect(result).toHaveLength(1);
+  });
+
+  it("separates distant same-name places by district", () => {
+    const result = toSuggestions([
+      make({ id: 1, admin2: "AMAC" }),
+      make({ id: 2, admin2: "Gwagwalada", latitude: 8.94, longitude: 7.08 }),
+    ]);
+    expect(result.map((r) => r.label)).toEqual([
+      "Abuja, AMAC, FCT, Nigeria",
+      "Abuja, Gwagwalada, FCT, Nigeria",
+    ]);
+  });
+
+  it("falls back to coordinates when there is no district", () => {
+    const result = toSuggestions([
+      make({ id: 1 }),
+      make({ id: 2, latitude: 8.94, longitude: 7.08 }),
+    ]);
+    expect(new Set(result.map((r) => r.label)).size).toBe(2);
+  });
+
+  it("keeps clearly different places unchanged", () => {
+    const result = toSuggestions([
+      make({ id: 1 }),
+      make({ id: 3, admin1: "Borno State", latitude: 11.8, longitude: 13.1 }),
+    ]);
+    expect(result.map((r) => r.label)).toEqual([
+      "Abuja, FCT, Nigeria",
+      "Abuja, Borno State, Nigeria",
+    ]);
+  });
+});
 
 function mockFetch(body: unknown, init: { ok?: boolean; status?: number } = {}) {
   const fetchMock = vi.fn().mockResolvedValue({

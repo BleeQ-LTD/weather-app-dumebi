@@ -1,14 +1,37 @@
 import type { Location } from "./locationTypes";
 
-// Shown when the user's location can't be found
-export const FALLBACK_LOCATION: Location = {
-  name: "Lagos",
-  latitude: 6.5244,
-  longitude: 3.3792,
-};
+export async function getApproximateLocation(): Promise<Location | null> {
+  try {
+    const response = await fetch(`${REVERSE_GEOCODE_URL}?localityLanguage=en`);
+    if (!response.ok) return null;
 
-// Free, key-less, client-side reverse geocoding (coordinates -> place name)
+    const data: {
+      latitude?: number;
+      longitude?: number;
+      city?: string;
+      locality?: string;
+      principalSubdivision?: string;
+    } = await response.json();
+
+    if (typeof data.latitude !== "number" || typeof data.longitude !== "number") {
+      return null;
+    }
+
+    return {
+      name: data.city || data.locality || data.principalSubdivision || DEFAULT_PLACE_NAME,
+      latitude: data.latitude,
+      longitude: data.longitude,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export const DEFAULT_PLACE_NAME = "My Location";
+
 const REVERSE_GEOCODE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
+
+const PLACE_NAME_TIMEOUT_MS = 4000;
 
 function describeGeolocationError(code: number): string {
   switch (code) {
@@ -23,7 +46,6 @@ function describeGeolocationError(code: number): string {
   }
 }
 
-// Asks the browser for the device's position (the browser shows a permission prompt)
 export function getCurrentCoordinates(): Promise<{ latitude: number; longitude: number }> {
   return new Promise((resolve, reject) => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -43,15 +65,18 @@ export function getCurrentCoordinates(): Promise<{ latitude: number; longitude: 
   });
 }
 
-// Returns a city/area name, or null if it can't be worked out (never throws)
-export async function getPlaceName(latitude: number, longitude: number): Promise<string | null> {
+async function fetchPlaceName(
+  latitude: number,
+  longitude: number,
+  signal: AbortSignal
+): Promise<string | null> {
   try {
     const url =
       `${REVERSE_GEOCODE_URL}?latitude=${latitude}` +
       `&longitude=${longitude}` +
       `&localityLanguage=en`;
 
-    const response = await fetch(url);
+    const response = await fetch(url, { signal });
     if (!response.ok) return null;
 
     const data: { city?: string; locality?: string; principalSubdivision?: string } =
@@ -63,9 +88,33 @@ export async function getPlaceName(latitude: number, longitude: number): Promise
   }
 }
 
-export async function getCurrentLocation(): Promise<Location> {
-  const { latitude, longitude } = await getCurrentCoordinates();
-  const name = await getPlaceName(latitude, longitude);
+export async function getPlaceName(
+  latitude: number,
+  longitude: number,
+  timeoutMs: number = PLACE_NAME_TIMEOUT_MS
+): Promise<string | null> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
 
-  return { name: name ?? "My Location", latitude, longitude };
+  const timeout = new Promise<null>((resolve) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      resolve(null);
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([fetchPlaceName(latitude, longitude, controller.signal), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function locateUser(onLocation: (location: Location) => void): Promise<void> {
+  const { latitude, longitude } = await getCurrentCoordinates();
+
+  onLocation({ name: DEFAULT_PLACE_NAME, latitude, longitude });
+
+  const name = await getPlaceName(latitude, longitude);
+  if (name) onLocation({ name, latitude, longitude });
 }

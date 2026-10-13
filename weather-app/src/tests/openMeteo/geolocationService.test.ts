@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_PLACE_NAME,
-  FALLBACK_LOCATION,
   getCurrentCoordinates,
   getPlaceName,
   locateUser,
@@ -49,11 +48,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("FALLBACK_LOCATION", () => {
-  it("is Lagos", () => {
-    expect(FALLBACK_LOCATION).toEqual({ name: "Lagos", latitude: 6.5244, longitude: 3.3792 });
-  });
-});
 
 describe("getCurrentCoordinates", () => {
   it("resolves with the device's latitude and longitude", async () => {

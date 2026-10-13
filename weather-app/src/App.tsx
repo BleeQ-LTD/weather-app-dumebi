@@ -5,10 +5,11 @@ import AuthScreen from "./components/AuthScreen";
 import WeatherScreen from "./components/WeatherScreen";
 import "./App.css";
 
-// Signed out -> sign in / sign up screen. Signed in -> the weather screen.
+// Signed in -> weather. Signed out -> sign-in screen, unless the visitor chose guest mode.
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [guest, setGuest] = useState(false);
 
   // Listens for sign in / sign out (returns the unsubscribe function)
   useEffect(() => {
@@ -22,11 +23,15 @@ function App() {
     return <p className="status">Loading...</p>;
   }
 
-  if (!user) {
-    return <AuthScreen />;
+  if (user) {
+    return <WeatherScreen key={user.uid} user={user} onRequestSignIn={() => setGuest(false)} />;
   }
 
-  return <WeatherScreen user={user} />;
+  if (guest) {
+    return <WeatherScreen key="guest" user={null} onRequestSignIn={() => setGuest(false)} />;
+  }
+
+  return <AuthScreen onContinueAsGuest={() => setGuest(true)} />;
 }
 
 export default App;

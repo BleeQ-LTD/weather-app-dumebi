@@ -152,52 +152,80 @@ input {
 }
 
 /* ---------- Weather screen layout ---------- */
+:root {
+  --page-bg: #242424; /* same as the page background in index.css */
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --page-bg: #ffffff;
+  }
+}
+
 .app {
-  max-width: 1200px;
+  max-width: 1100px;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 24px;
-  display: grid;
-  grid-template-columns: clamp(200px, 26vw, 280px) minmax(0, 1fr);
-  gap: 24px;
+  padding: 72px 24px 24px; /* top room for the floating button */
 }
 
-.app.sidebar-closed {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.toolbar {
-  grid-column: 1 / -1;
-  display: flex;
-}
-
+/* Floating sidebar button: always visible, including on phones */
 .icon-button {
   display: inline-grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background-color: var(--page-bg);
+  background-image: linear-gradient(var(--surface-strong), var(--surface-strong));
 }
 
-.icon-button:hover {
-  background: var(--surface-strong);
+.icon-button.floating {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  left: max(16px, env(safe-area-inset-left));
+  z-index: 30;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
-.sidebar[hidden] {
-  display: none;
+/* Sidebar as an overlay that slides over the page */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.5);
 }
 
 .sidebar {
-  position: sticky;
-  top: 24px;
-  align-self: start;
-  max-height: calc(100vh - 48px);
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 25;
+  width: min(320px, 85vw);
+  padding: 76px 16px 16px; /* clears the floating button */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background-color: var(--page-bg);
+  background-image: linear-gradient(var(--surface), var(--surface));
+  border-right: 1px solid var(--border);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+  transform: translateX(-100%);
+  visibility: hidden; /* also removes the hidden links and buttons from the tab order */
+  transition: transform 0.25s ease, visibility 0s linear 0.25s;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+  visibility: visible;
+  transition: transform 0.25s ease, visibility 0s;
+}
+
+.sidebar .sidebar-footer {
+  margin-top: auto;
 }
 
 .main {
@@ -378,6 +406,7 @@ input {
 
 /* ---------- Hourly ---------- */
 .hourly {
+  position: relative;
   display: flex;
   gap: 4px;
   overflow-x: auto;
@@ -396,6 +425,7 @@ input {
 
 .hour.current {
   background: var(--surface-strong);
+  animation: now-pop 600ms ease-out 700ms 1;
 }
 
 .hour-label {
@@ -556,23 +586,82 @@ input {
   transform: translate(-50%, -50%);
 }
 
+/* ---------- Guest mode and sign-in extras ---------- */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.guest-option {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+
+.guest-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.guest-card .sidebar-title {
+  margin-bottom: 0;
+}
+
+/* ---------- Motion ---------- */
+@keyframes now-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+  70% {
+    transform: scale(0.94);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hour.current {
+    animation: none;
+  }
+
+  .sidebar,
+  .sidebar.open {
+    transition: none;
+  }
+}
+
 /* ---------- Wide screens: 10-day forecast beside the tiles ---------- */
-@media (min-width: 1100px) {
+@media (min-width: 900px) {
   .details-layout {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 
-/* ---------- Phone-width screens only: no room for a side bar, so it stacks above ---------- */
+/* ---------- Phone-width screens ---------- */
 @media (max-width: 560px) {
   .app {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 16px;
-  }
-
-  .sidebar {
-    position: static;
-    max-height: none;
+    padding: 68px 16px 16px;
   }
 
   .current-temp {

@@ -7,6 +7,8 @@ interface CurrentConditionsProps {
   current: CurrentWeather;
   today: DailyWeather | undefined;
   isFavourite: boolean;
+  isGuest: boolean;
+  saveDisabled: boolean; // true while favourites are still loading
   onToggleFavourite: () => void;
 }
 
@@ -16,6 +18,8 @@ function CurrentConditions({
   current,
   today,
   isFavourite,
+  isGuest,
+  saveDisabled,
   onToggleFavourite,
 }: CurrentConditionsProps) {
   return (
@@ -32,8 +36,13 @@ function CurrentConditions({
           H:{Math.round(today.maxTemp)}° L:{Math.round(today.minTemp)}°
         </p>
       )}
-      <button type="button" className="btn btn-ghost" onClick={onToggleFavourite}>
-        {isFavourite ? "★ Saved" : "☆ Save"}
+      <button
+        type="button"
+        className="btn btn-ghost"
+        disabled={saveDisabled}
+        onClick={onToggleFavourite}
+      >
+        {isGuest ? "☆ Sign in to save" : isFavourite ? "★ Saved" : "☆ Save"}
       </button>
     </header>
   );

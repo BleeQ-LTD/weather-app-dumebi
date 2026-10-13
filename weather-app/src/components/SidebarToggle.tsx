@@ -10,7 +10,7 @@ function SidebarToggle({ open, onToggle }: SidebarToggleProps) {
   return (
     <button
       type="button"
-      className="icon-button"
+      className="icon-button floating"
       onClick={onToggle}
       aria-label={label}
       aria-expanded={open}

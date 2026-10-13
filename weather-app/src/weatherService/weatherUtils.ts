@@ -1,4 +1,3 @@
-// Small pure helpers for turning weather data into text and icons
 
 export function getWeatherIcon(code: number, isDay: boolean): string {
   if (code === 0) return isDay ? "☀️" : "🌙";
@@ -13,7 +12,6 @@ export function getWeatherIcon(code: number, isDay: boolean): string {
   return "☁️";
 }
 
-// Matches the rounded number shown on the tile
 export function getUvLabel(uv: number): string {
   const value = Math.round(uv);
   if (value < 3) return "Low";
@@ -23,44 +21,40 @@ export function getUvLabel(uv: number): string {
   return "Extreme";
 }
 
-// Degrees (0-360) -> N, NE, E, SE, S, SW, W, NW
 export function getCompassDirection(degrees: number): string {
   const points = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const normalised = ((degrees % 360) + 360) % 360;
   return points[Math.round(normalised / 45) % 8];
 }
 
-// "2026-10-01T14:00" -> "14"; the hour we're in right now is "Now"
 export function getHourLabel(time: string, isNow: boolean): string {
   return isNow ? "Now" : time.slice(11, 13);
 }
 
-// True for the hourly entry that contains the current time
-// ("2026-10-01T14:00" contains "2026-10-01T14:15")
 export function isCurrentHour(hourTime: string, currentTime: string): boolean {
   return hourTime.slice(0, 13) === currentTime.slice(0, 13);
 }
 
-// "2026-10-01T18:38" -> "18:38"
 export function formatTime(iso: string): string {
   return iso.slice(11, 16);
 }
 
-// "2026-10-03" -> "Sat" (the first item is "Today")
 export function getDayLabel(date: string, index: number): string {
   if (index === 0) return "Today";
-  // T00:00:00 makes the browser read it as a local date, so the weekday doesn't shift
   return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", { weekday: "short" });
 }
 
-// Position of a day's low-high range inside the whole 10-day range (as percentages)
+export function formatForecastTitle(dayCount: number): string {
+  return `${dayCount}-day forecast`;
+}
+
 export function getRangeBar(
   min: number,
   max: number,
   weekMin: number,
   weekMax: number
 ): { left: number; width: number } {
-  const MIN_WIDTH = 4; // keeps a one-degree day visible
+  const MIN_WIDTH = 4; 
 
   const span = weekMax - weekMin;
   if (span <= 0) return { left: 0, width: 100 };
