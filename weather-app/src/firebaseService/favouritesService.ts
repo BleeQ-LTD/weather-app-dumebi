@@ -2,7 +2,6 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDoc,
   getDocs,
   orderBy,
   query,
@@ -15,6 +14,7 @@ import type { Location } from "../locationService/locationTypes";
 import type { FavouriteLocation } from "./firebaseTypes";
 
 // Data lives at: users/{uid}/favourites/{favouriteId}
+// favouriteId is built from the city and country, so a city can only exist once.
 
 const NOT_SIGNED_IN = "You must be signed in to manage favourites.";
 
@@ -31,27 +31,24 @@ export async function addFavourite(
 ): Promise<FavouriteLocation> {
   const userId = requireUid(uid);
   const id = makeFavouriteId(location);
-  const ref = doc(db, "users", userId, "favourites", id);
+  const countryCode = location.countryCode ? { countryCode: location.countryCode } : {};
 
-  const favourite: FavouriteLocation = {
+  // Same city -> same document, so saving twice overwrites instead of duplicating
+  await setDoc(doc(db, "users", userId, "favourites", id), {
+    name: location.name,
+    latitude: location.latitude,
+    longitude: location.longitude,
+    ...countryCode,
+    createdAt: serverTimestamp(),
+  });
+
+  return {
     id,
     name: location.name,
     latitude: location.latitude,
     longitude: location.longitude,
+    ...countryCode,
   };
-
-  // Already saved: leave it alone so the original createdAt isn't overwritten
-  const existing = await getDoc(ref);
-  if (existing.exists()) return favourite;
-
-  await setDoc(ref, {
-    name: location.name,
-    latitude: location.latitude,
-    longitude: location.longitude,
-    createdAt: serverTimestamp(),
-  });
-
-  return favourite;
 }
 
 export async function getFavourites(
@@ -70,6 +67,7 @@ export async function getFavourites(
       name: data.name,
       latitude: data.latitude,
       longitude: data.longitude,
+      ...(typeof data.countryCode === "string" ? { countryCode: data.countryCode } : {}),
     };
   });
 }

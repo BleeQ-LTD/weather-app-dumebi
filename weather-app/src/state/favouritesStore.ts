@@ -1,5 +1,5 @@
 import { addFavourite, getFavourites, removeFavourite } from "../firebaseService/favouritesService";
-import { makeFavouriteId } from "../firebaseService/favouriteId";
+import { isSamePlace, makeFavouriteId } from "../firebaseService/favouriteId";
 import type { FavouriteLocation } from "../firebaseService/firebaseTypes";
 import type { Location } from "../locationService/locationTypes";
 
@@ -7,18 +7,32 @@ export interface FavouritesSnapshot {
   owner: string | null; // the account these favourites belong to
   favourites: FavouriteLocation[];
   error: string;
-  loaded: boolean; // CHANGED (1/4): true once the first load for this account has finished
+  loaded: boolean; // true once the first load for this account has finished
 }
 
 // What the user did on screen, remembered so a slow initial load can't undo it
 type LocalChange = { type: "added"; item: FavouriteLocation } | { type: "removed" };
+
+// Older accounts may hold several saves of the same city (from before one city
+// became one document). Keep the newest of each and report the rest.
+function splitDuplicates(items: FavouriteLocation[]): {
+  kept: FavouriteLocation[];
+  extras: FavouriteLocation[];
+} {
+  const kept: FavouriteLocation[] = [];
+  const extras: FavouriteLocation[] = [];
+
+  for (const item of items) {
+    (kept.some((k) => isSamePlace(k, item)) ? extras : kept).push(item);
+  }
+  return { kept, extras };
+}
 
 // Holds one account's favourites. Written without React so the timing rules are easy to test:
 //  - switching account resets everything, and results for the old account are discarded
 //  - a slow initial load never removes (or resurrects) something changed in the meantime
 //  - when two operations on the same place overlap, only the newest one updates the screen
 export class FavouritesStore {
-  // CHANGED (2/4): initial value includes loaded: false
   private snapshot: FavouritesSnapshot = { owner: null, favourites: [], error: "", loaded: false };
   private listeners = new Set<() => void>();
   private generation = 0; // bumped on every account change
@@ -49,7 +63,6 @@ export class FavouritesStore {
     this.uid = uid;
     this.latestOperation.clear();
     this.localChanges.clear();
-    // CHANGED (3/4): reset loaded when the account changes
     this.update({ owner: uid, favourites: [], error: "", loaded: false });
 
     if (!uid) return;
@@ -57,13 +70,21 @@ export class FavouritesStore {
     getFavourites(uid)
       .then((loaded) => {
         if (generation !== this.generation) return; // a different account is active now
-        // CHANGED (4/4a): mark loaded on success
-        this.update({ favourites: this.mergeLocalChanges(loaded), loaded: true });
+
+        const { kept, extras } = splitDuplicates(this.mergeLocalChanges(loaded));
+        this.update({ favourites: kept, loaded: true });
+
+        // One-time tidy-up of old duplicates; failures are harmless (retried next load)
+        extras.forEach((extra) => {
+          removeFavourite(uid, extra.id).catch((err) =>
+            console.error("Removing duplicate favourite failed:", err)
+          );
+        });
       })
       .catch((err) => {
         console.error("Loading favourites failed:", err);
         if (generation === this.generation) {
-          // CHANGED (4/4b): loaded: true so Save isn't disabled forever after an error
+          // loaded: true so the Save button isn't disabled forever after an error
           this.update({ error: "Could not load your favourites.", loaded: true });
         }
       });

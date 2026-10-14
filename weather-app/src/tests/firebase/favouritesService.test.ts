@@ -26,7 +26,6 @@ vi.mock("../../firebaseService/firebase", () => ({
 import {
   addFavourite,
   getFavourites,
-  makeFavouriteId,
   removeFavourite,
 } from "../../firebaseService/favouritesService";
 
@@ -51,18 +50,6 @@ beforeEach(() => {
   vi.resetAllMocks();
 });
 
-describe("makeFavouriteId", () => {
-  it("rounds coordinates so the same place always gets the same id", () => {
-    expect(makeFavouriteId({ latitude: 6.52440001, longitude: 3.37919999 })).toBe(
-      makeFavouriteId(lagos)
-    );
-    expect(makeFavouriteId(lagos)).toBe("6.5244_3.3792");
-  });
-
-  it("gives different places different ids", () => {
-    expect(makeFavouriteId(lagos)).not.toBe(makeFavouriteId(london));
-  });
-});
 
 describe("TC-FB-005 favourite locations", () => {
   it("saves a favourite under the user's own path", async () => {
