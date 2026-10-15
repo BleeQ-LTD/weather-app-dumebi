@@ -1,57 +1,35 @@
-import type { PlaceSuggestion, GeocodingResponse } from "./locationTypes";
+import type { PlaceSuggestion, GeocodingResponse, Location } from "./locationTypes";
+import { makePlace } from "./placeLabel";
 import { isSamePlace } from "../firebaseService/favouriteId";
 
 const GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
 
-// Ask for extra results, because duplicates are removed before showing them
+// Ask for extra results, because several records describe the same city
 const FETCH_COUNT = 15;
 const MAX_RESULTS = 6;
 
 export type GeocodingResult = NonNullable<GeocodingResponse["results"]>[number];
 
-function buildLabel(parts: Array<string | undefined>): string {
-  return [...new Set(parts)].filter((part): part is string => Boolean(part)).join(", ");
-}
-
-function countOf(labels: string[], label: string): number {
-  return labels.filter((l) => l === label).length;
-}
-
-// Pure function (no network), so it can be tested directly
+// Pure function (no network), so it can be tested directly.
+// One suggestion per city and country, in the API's order.
 export function toSuggestions(results: GeocodingResult[]): PlaceSuggestion[] {
-  const baseLabel = (r: GeocodingResult) => buildLabel([r.name, r.admin1, r.country]);
+  const suggestions: PlaceSuggestion[] = [];
 
-  // 1. Drop near-duplicates: same label and within 5 km (API order is kept)
-  const unique: GeocodingResult[] = [];
-  for (const r of results) {
-    if (!unique.some((u) => baseLabel(u) === baseLabel(r) && isSamePlace(u, r))) {
-      unique.push(r);
-    }
+  for (const result of results) {
+    const place = makePlace(result.name, result.country_code, result.country);
+    const location: Location = {
+      ...place,
+      latitude: result.latitude,
+      longitude: result.longitude,
+    };
+
+    if (suggestions.some((s) => isSamePlace(s.location, location))) continue;
+
+    suggestions.push({ id: result.id, label: place.name, location });
+    if (suggestions.length === MAX_RESULTS) break;
   }
-  const shown = unique.slice(0, MAX_RESULTS);
 
-  // 2. Labels that still collide get the district
-  const base = shown.map(baseLabel);
-  const withDistrict = shown.map((r, i) =>
-    countOf(base, base[i]) > 1 ? buildLabel([r.name, r.admin2, r.admin1, r.country]) : base[i]
-  );
-
-  // 3. Anything still colliding gets its coordinates
-  const labels = withDistrict.map((label, i) =>
-    countOf(withDistrict, label) > 1
-      ? `${label} (${shown[i].latitude.toFixed(2)}, ${shown[i].longitude.toFixed(2)})`
-      : label
-  );
-
-  return shown.map((r, i) => ({
-    id: r.id,
-    label: labels[i],
-    location: {
-      name: labels[i],
-      latitude: r.latitude,
-      longitude: r.longitude,
-    },
-  }));
+  return suggestions;
 }
 
 export async function searchPlaces(input: string): Promise<PlaceSuggestion[]> {

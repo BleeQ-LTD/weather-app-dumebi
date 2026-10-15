@@ -17,7 +17,6 @@ export function useFavourites(uid: string | null) {
 
   const add = useCallback(
     async (location: Location) => {
-      // Already saved (same place within ~5 km): do nothing
       if (favourites.some((f) => isSamePlace(f, location))) return;
       await store.add(location);
     },
