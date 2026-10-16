@@ -59,7 +59,7 @@ describe("TC-FB-005 favourite locations", () => {
 
     expect(setDocMock).toHaveBeenCalledTimes(1);
     const [ref, data] = setDocMock.mock.calls[0];
-    expect(ref.path).toBe("users/user-1/favourites/6.5244_3.3792");
+    expect(ref.path).toBe("users/user-1/favourites/lagos_nigeria");
     expect(data).toEqual({
       name: "Lagos, Nigeria",
       latitude: 6.5244,
@@ -73,7 +73,7 @@ describe("TC-FB-005 favourite locations", () => {
 
     const saved = await addFavourite("user-1", lagos);
 
-    expect(saved).toEqual({ id: "6.5244_3.3792", ...lagos });
+    expect(saved).toEqual({ id: "lagos_nigeria", ...lagos });
   });
 
   it("preserves latitude and longitude exactly, including negatives", async () => {
@@ -82,7 +82,7 @@ describe("TC-FB-005 favourite locations", () => {
     await addFavourite("user-1", london);
 
     const [ref, data] = setDocMock.mock.calls[0];
-    expect(ref.path).toBe("users/user-1/favourites/51.5074_-0.1278");
+    expect(ref.path).toBe("users/user-1/favourites/london_united-kingdom");
     expect(data.latitude).toBe(51.5074);
     expect(data.longitude).toBe(-0.1278);
   });
@@ -99,8 +99,8 @@ describe("TC-FB-005 favourite locations", () => {
   it("retrieves favourites newest first, with coordinates intact", async () => {
     getDocsMock.mockResolvedValue(
       fakeSnapshot([
-        { id: "51.5074_-0.1278", ...london },
-        { id: "6.5244_3.3792", ...lagos },
+        { id: "london_united-kingdom", ...london },
+        { id: "lagos_nigeria", ...lagos },
       ])
     );
 
@@ -111,8 +111,8 @@ describe("TC-FB-005 favourite locations", () => {
     expect(queryArg.constraints[0]).toEqual({ field: "createdAt", direction: "desc" });
 
     expect(favourites).toEqual([
-      { id: "51.5074_-0.1278", ...london },
-      { id: "6.5244_3.3792", ...lagos },
+      { id: "london_united-kingdom", ...london },
+      { id: "lagos_nigeria", ...lagos },
     ]);
   });
 
@@ -125,10 +125,10 @@ describe("TC-FB-005 favourite locations", () => {
   it("removes a favourite from the user's own path", async () => {
     deleteDocMock.mockResolvedValue(undefined);
 
-    await removeFavourite("user-1", "6.5244_3.3792");
+    await removeFavourite("user-1", "lagos_nigeria");
 
     expect(deleteDocMock).toHaveBeenCalledTimes(1);
-    expect(deleteDocMock.mock.calls[0][0].path).toBe("users/user-1/favourites/6.5244_3.3792");
+    expect(deleteDocMock.mock.calls[0][0].path).toBe("users/user-1/favourites/lagos_nigeria");
   });
 
   it("only touches the signed-in user's data (isolation between users)", async () => {
@@ -139,8 +139,8 @@ describe("TC-FB-005 favourite locations", () => {
     await addFavourite("user-b", lagos);
     await getFavourites("user-b");
 
-    expect(setDocMock.mock.calls[0][0].path).toBe("users/user-a/favourites/6.5244_3.3792");
-    expect(setDocMock.mock.calls[1][0].path).toBe("users/user-b/favourites/6.5244_3.3792");
+    expect(setDocMock.mock.calls[0][0].path).toBe("users/user-a/favourites/lagos_nigeria");
+    expect(setDocMock.mock.calls[1][0].path).toBe("users/user-b/favourites/lagos_nigeria");
     expect(getDocsMock.mock.calls[0][0].ref.path).toBe("users/user-b/favourites");
   });
 
@@ -157,7 +157,7 @@ describe("TC-FB-006 unauthenticated favourite access", () => {
 
     await expect(addFavourite(uid, lagos)).rejects.toThrow(message);
     await expect(getFavourites(uid)).rejects.toThrow(message);
-    await expect(removeFavourite(uid, "6.5244_3.3792")).rejects.toThrow(message);
+    await expect(removeFavourite(uid, "lagos_nigeria")).rejects.toThrow(message);
 
     // Firestore is never contacted
     expect(setDocMock).not.toHaveBeenCalled();

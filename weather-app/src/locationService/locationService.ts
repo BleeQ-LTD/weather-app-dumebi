@@ -46,5 +46,10 @@ export async function searchPlaces(input: string): Promise<PlaceSuggestion[]> {
 
   const data: GeocodingResponse = await response.json();
 
+  // A text value is iterable, so it would otherwise be read letter by letter
+  if (data.results !== undefined && !Array.isArray(data.results)) {
+    throw new Error("Unexpected response from the geocoding service.");
+  }
+
   return toSuggestions(data.results ?? []);
 }

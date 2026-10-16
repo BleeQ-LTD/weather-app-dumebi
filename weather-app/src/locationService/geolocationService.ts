@@ -1,32 +1,54 @@
 import type { Location } from "./locationTypes";
 import { makePlace } from "./placeLabel";
 
-// No hard-coded fallback city: if precise location fails, the app uses an
-// approximate location from the network (getApproximateLocation below).
+// "City, Country", the same shape as the search results. A response without a
+// country gives just the city, and one with no name at all gives an empty string.
+function labelFor(data: {
+  city?: string;
+  locality?: string;
+  principalSubdivision?: string;
+  countryName?: string;
+  countryCode?: string;
+}): string {
+  const city = data.city || data.locality || data.principalSubdivision;
+  return city ? makePlace(city, data.countryCode, data.countryName).name : "";
+}
+
+
+export async function getApproximateLocation(): Promise<Location | null> {
+  try {
+    const response = await fetch(`${REVERSE_GEOCODE_URL}?localityLanguage=en`);
+    if (!response.ok) return null;
+
+    const data: {
+      latitude?: number;
+      longitude?: number;
+      city?: string;
+      countryName?: string;
+      locality?: string;
+      principalSubdivision?: string;
+    } = await response.json();
+
+    if (typeof data.latitude !== "number" || typeof data.longitude !== "number") {
+      return null;
+    }
+
+    return {
+      name:
+        labelFor(data) || DEFAULT_PLACE_NAME, 
+      latitude: data.latitude,
+      longitude: data.longitude,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export const DEFAULT_PLACE_NAME = "My Location";
 
 const REVERSE_GEOCODE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
 
 const PLACE_NAME_TIMEOUT_MS = 4000;
-
-interface ReverseGeocodeResponse {
-  latitude?: number;
-  longitude?: number;
-  city?: string;
-  locality?: string;
-  principalSubdivision?: string;
-  countryName?: string;
-  countryCode?: string;
-}
-
-type Place = Pick<Location, "name" | "countryCode">;
-
-// "City, Country", built exactly like the search results
-function placeFrom(data: ReverseGeocodeResponse): Place | null {
-  const city = data.city || data.locality || data.principalSubdivision;
-  return city ? makePlace(city, data.countryCode, data.countryName) : null;
-}
 
 function describeGeolocationError(code: number): string {
   switch (code) {
@@ -60,11 +82,11 @@ export function getCurrentCoordinates(): Promise<{ latitude: number; longitude: 
   });
 }
 
-async function fetchPlace(
+async function fetchPlaceName(
   latitude: number,
   longitude: number,
   signal: AbortSignal
-): Promise<Place | null> {
+): Promise<string | null> {
   try {
     const url =
       `${REVERSE_GEOCODE_URL}?latitude=${latitude}` +
@@ -74,18 +96,25 @@ async function fetchPlace(
     const response = await fetch(url, { signal });
     if (!response.ok) return null;
 
-    const data: ReverseGeocodeResponse = await response.json();
-    return placeFrom(data);
+    const data: {
+      city?: string;
+      locality?: string;
+      principalSubdivision?: string;
+      countryName?: string;
+    } = await response.json();
+
+    const label = labelFor(data);
+    return label || null;
   } catch {
     return null;
   }
 }
 
-export async function getPlace(
+export async function getPlaceName(
   latitude: number,
   longitude: number,
   timeoutMs: number = PLACE_NAME_TIMEOUT_MS
-): Promise<Place | null> {
+): Promise<string | null> {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -97,46 +126,9 @@ export async function getPlace(
   });
 
   try {
-    return await Promise.race([fetchPlace(latitude, longitude, controller.signal), timeout]);
+    return await Promise.race([fetchPlaceName(latitude, longitude, controller.signal), timeout]);
   } finally {
     clearTimeout(timer);
-  }
-}
-
-export async function getPlaceName(
-  latitude: number,
-  longitude: number,
-  timeoutMs: number = PLACE_NAME_TIMEOUT_MS
-): Promise<string | null> {
-  return (await getPlace(latitude, longitude, timeoutMs))?.name ?? null;
-}
-
-// Approximate position from the network (IP). Used only when the browser's
-// precise location is denied, times out or is unsupported.
-export async function getApproximateLocation(): Promise<Location | null> {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), PLACE_NAME_TIMEOUT_MS);
-
-    // With no coordinates, this endpoint locates the caller by IP address
-    const response = await fetch(`${REVERSE_GEOCODE_URL}?localityLanguage=en`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (!response.ok) return null;
-
-    const data: ReverseGeocodeResponse = await response.json();
-    if (typeof data.latitude !== "number" || typeof data.longitude !== "number") {
-      return null;
-    }
-
-    return {
-      ...(placeFrom(data) ?? { name: DEFAULT_PLACE_NAME }),
-      latitude: data.latitude,
-      longitude: data.longitude,
-    };
-  } catch {
-    return null;
   }
 }
 
@@ -145,6 +137,6 @@ export async function locateUser(onLocation: (location: Location) => void): Prom
 
   onLocation({ name: DEFAULT_PLACE_NAME, latitude, longitude });
 
-  const place = await getPlace(latitude, longitude);
-  if (place) onLocation({ ...place, latitude, longitude });
+  const name = await getPlaceName(latitude, longitude);
+  if (name) onLocation({ name, latitude, longitude });
 }
