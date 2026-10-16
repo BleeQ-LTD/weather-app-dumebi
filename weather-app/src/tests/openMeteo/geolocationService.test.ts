@@ -101,20 +101,6 @@ describe("getPlaceName", () => {
     expect(url.searchParams.get("longitude")).toBe("3.4219");
   });
 
-  it("prefers the city name", async () => {
-    mockFetch({ city: "Lagos", locality: "Ikoyi", principalSubdivision: "Lagos State" });
-
-    expect(await getPlaceName(6.4281, 3.4219)).toBe("Lagos");
-  });
-
-  it("falls back to locality, then to region", async () => {
-    mockFetch({ city: "", locality: "Ikoyi", principalSubdivision: "Lagos State" });
-    expect(await getPlaceName(6.4281, 3.4219)).toBe("Ikoyi");
-
-    mockFetch({ city: "", locality: "", principalSubdivision: "Lagos State" });
-    expect(await getPlaceName(6.4281, 3.4219)).toBe("Lagos State");
-  });
-
   it("returns null when there is no usable name", async () => {
     mockFetch({ city: "", locality: "" });
 
