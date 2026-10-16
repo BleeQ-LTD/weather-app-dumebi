@@ -1,19 +1,5 @@
 import type { Location } from "./locationTypes";
-import { makePlace } from "./placeLabel";
-
-// "City, Country", the same shape as the search results. A response without a
-// country gives just the city, and one with no name at all gives an empty string.
-function labelFor(data: {
-  city?: string;
-  locality?: string;
-  principalSubdivision?: string;
-  countryName?: string;
-  countryCode?: string;
-}): string {
-  const city = data.city || data.locality || data.principalSubdivision;
-  return city ? makePlace(city, data.countryCode, data.countryName).name : "";
-}
-
+import { buildPlaceLabel } from "./placeLabel";
 
 export async function getApproximateLocation(): Promise<Location | null> {
   try {
@@ -35,7 +21,11 @@ export async function getApproximateLocation(): Promise<Location | null> {
 
     return {
       name:
-        labelFor(data) || DEFAULT_PLACE_NAME, 
+        buildPlaceLabel([
+          data.city || data.locality,
+          data.principalSubdivision,
+          data.countryName,
+        ]) || DEFAULT_PLACE_NAME, 
       latitude: data.latitude,
       longitude: data.longitude,
     };
@@ -44,7 +34,7 @@ export async function getApproximateLocation(): Promise<Location | null> {
   }
 }
 
-export const DEFAULT_PLACE_NAME = "My Location";
+export const DEFAULT_PLACE_NAME = "Where I am";
 
 const REVERSE_GEOCODE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
 
@@ -103,7 +93,11 @@ async function fetchPlaceName(
       countryName?: string;
     } = await response.json();
 
-    const label = labelFor(data);
+    const label = buildPlaceLabel([
+      data.city || data.locality,
+      data.principalSubdivision,
+      data.countryName,
+    ]);
     return label || null;
   } catch {
     return null;
