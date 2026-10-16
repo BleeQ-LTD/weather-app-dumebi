@@ -129,13 +129,13 @@ describe("TC-OM-001 forecast API: the request", () => {
     );
   });
 
-  it("requests 8 days of forecast", async () => {
+  it("requests 10 days of forecast", async () => {
     const fetchMock = mockFetch(makeBody());
 
     await getForecast(6.5244, 3.3792);
 
-    expect(requestedUrl(fetchMock).searchParams.get("forecast_days")).toBe("8");
-    expect(FORECAST_DAYS).toBe(8);
+    expect(requestedUrl(fetchMock).searchParams.get("forecast_days")).toBe(String(FORECAST_DAYS));
+    expect(FORECAST_DAYS).toBe(10);
   });
 
   it("asks for times in the location's own timezone", async () => {

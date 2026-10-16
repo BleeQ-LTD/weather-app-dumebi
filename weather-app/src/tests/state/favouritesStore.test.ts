@@ -17,14 +17,14 @@ vi.mock("../../firebaseService/favouritesService", () => ({
 import { FavouritesStore } from "../../state/favouritesStore";
 
 const lagos: FavouriteLocation = {
-  id: "6.5244_3.3792",
+  id: "lagos_nigeria",
   name: "Lagos, Nigeria",
   latitude: 6.5244,
   longitude: 3.3792,
 };
 
 const london: FavouriteLocation = {
-  id: "51.5074_-0.1278",
+  id: "london_united-kingdom",
   name: "London, United Kingdom",
   latitude: 51.5074,
   longitude: -0.1278,
@@ -193,7 +193,7 @@ describe("switching accounts", () => {
     await store.add(lagosPlace);
     await store.remove(lagos.id);
 
-    expect(store.getSnapshot()).toEqual({ owner: null, favourites: [], error: "" });
+    expect(store.getSnapshot()).toEqual({ owner: null, favourites: [], error: "", loaded: false });
     expect(getFavouritesMock).not.toHaveBeenCalled();
     expect(addFavouriteMock).not.toHaveBeenCalled();
     expect(removeFavouriteMock).not.toHaveBeenCalled();
@@ -271,6 +271,7 @@ describe("normal use", () => {
       owner: "user-a",
       favourites: [lagos, london],
       error: "",
+      loaded: true,
     });
   });
 });

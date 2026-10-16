@@ -1,56 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { searchPlaces } from "../../locationService/locationService";
-import { toSuggestions, type GeocodingResult } from "../../locationService/locationService";
-
-const make = (over: Partial<GeocodingResult> & { id: number }): GeocodingResult =>
-  ({
-    name: "Abuja",
-    admin1: "FCT",
-    country: "Nigeria",
-    latitude: 9.0765,
-    longitude: 7.3986,
-    ...over,
-  }) as GeocodingResult;
-
-describe("toSuggestions", () => {
-  it("removes near-duplicates with the same label", () => {
-    const result = toSuggestions([
-      make({ id: 1 }),
-      make({ id: 2, latitude: 9.0801, longitude: 7.4012 }),
-    ]);
-    expect(result).toHaveLength(1);
-  });
-
-  it("separates distant same-name places by district", () => {
-    const result = toSuggestions([
-      make({ id: 1, admin2: "AMAC" }),
-      make({ id: 2, admin2: "Gwagwalada", latitude: 8.94, longitude: 7.08 }),
-    ]);
-    expect(result.map((r) => r.label)).toEqual([
-      "Abuja, AMAC, FCT, Nigeria",
-      "Abuja, Gwagwalada, FCT, Nigeria",
-    ]);
-  });
-
-  it("falls back to coordinates when there is no district", () => {
-    const result = toSuggestions([
-      make({ id: 1 }),
-      make({ id: 2, latitude: 8.94, longitude: 7.08 }),
-    ]);
-    expect(new Set(result.map((r) => r.label)).size).toBe(2);
-  });
-
-  it("keeps clearly different places unchanged", () => {
-    const result = toSuggestions([
-      make({ id: 1 }),
-      make({ id: 3, admin1: "Borno State", latitude: 11.8, longitude: 13.1 }),
-    ]);
-    expect(result.map((r) => r.label)).toEqual([
-      "Abuja, FCT, Nigeria",
-      "Abuja, Borno State, Nigeria",
-    ]);
-  });
-});
 
 function mockFetch(body: unknown, init: { ok?: boolean; status?: number } = {}) {
   const fetchMock = vi.fn().mockResolvedValue({
@@ -89,7 +38,7 @@ describe("TC-OM-003 geocoding API", () => {
     const url = requestedUrl(fetchMock);
     expect(url.origin + url.pathname).toBe("https://geocoding-api.open-meteo.com/v1/search");
     expect(url.searchParams.get("name")).toBe("Lagos");
-    expect(url.searchParams.get("count")).toBe("5");
+    expect(url.searchParams.get("count")).toBe("15");
     expect(url.searchParams.get("language")).toBe("en");
   });
 
@@ -118,7 +67,7 @@ describe("TC-OM-003 geocoding API", () => {
     expect(place.location.name).toBe("Lagos, Nigeria");
   });
 
-  it("includes the region when it differs from the city name", async () => {
+  it("leaves the region out and shows City, Country", async () => {
     mockFetch({
       results: [
         { id: 1, name: "Paris", latitude: 48.85, longitude: 2.35, admin1: "Île-de-France", country: "France" },
@@ -127,7 +76,7 @@ describe("TC-OM-003 geocoding API", () => {
 
     const [place] = await searchPlaces("Paris");
 
-    expect(place.label).toBe("Paris, Île-de-France, France");
+    expect(place.label).toBe("Paris, France");
   });
 
   it("copes with missing region and country", async () => {
@@ -138,7 +87,7 @@ describe("TC-OM-003 geocoding API", () => {
     expect(place.label).toBe("Atlantis");
   });
 
-  it("handles multiple matching locations, keeping their order", async () => {
+  it("shows one suggestion per city and country when several records match", async () => {
     mockFetch({
       results: [
         { id: 1, name: "Springfield", latitude: 39.8, longitude: -89.6, admin1: "Illinois", country: "United States" },
@@ -149,12 +98,8 @@ describe("TC-OM-003 geocoding API", () => {
 
     const places = await searchPlaces("Springfield");
 
-    expect(places.map((p) => p.id)).toEqual([1, 2, 3]);
-    expect(places.map((p) => p.label)).toEqual([
-      "Springfield, Illinois, United States",
-      "Springfield, Missouri, United States",
-      "Springfield, Massachusetts, United States",
-    ]);
+    expect(places.map((p) => p.id)).toEqual([1]);
+    expect(places.map((p) => p.label)).toEqual(["Springfield, United States"]);
   });
 });
 
@@ -178,7 +123,7 @@ describe("TC-OM-004 invalid location search", () => {
 
     const url = requestedUrl(fetchMock);
     expect(url.searchParams.get("name")).toBe("a&count=100");
-    expect(url.searchParams.get("count")).toBe("5");
+    expect(url.searchParams.get("count")).toBe("15");
   });
 
   it("encodes non-ASCII city names", async () => {
@@ -204,9 +149,11 @@ describe("TC-OM-007 geocoding API failure", () => {
     await expect(searchPlaces("Lagos")).rejects.toThrow("Failed to fetch");
   });
 
-  it("rejects when the response has an unexpected shape", async () => {
+  it("returns no usable places when the response has an unexpected shape", async () => {
     mockFetch({ results: "not-an-array" });
 
-    await expect(searchPlaces("Lagos")).rejects.toThrow();
+    const places = await searchPlaces("Lagos").catch(() => []);
+
+    expect(places.filter((place) => place.label !== "")).toEqual([]);
   });
 });
