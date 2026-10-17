@@ -24,7 +24,7 @@ function CurrentConditions({
 }: CurrentConditionsProps) {
   return (
     <header className="current">
-      {isMyLocation && <p className="current-label">My Location</p>}
+      {isMyLocation && <p className="current-label">Where I am</p>}
       <h1 className="current-name">{name}</h1>
       <p className="current-temp">{Math.round(current.temperature)}°</p>
       <p className="current-condition">

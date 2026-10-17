@@ -104,7 +104,7 @@ function WeatherScreen({ user, onRequestSignIn }: WeatherScreenProps) {
             className={isMyLocation ? "location-row active" : "location-row"}
             onClick={() => handleSelect(myLocation)}
           >
-            <span>📍 My Location</span>
+            <span>📍 Where I am</span>
             <span className="muted small">{myLocation.name}</span>
           </button>
         )}
