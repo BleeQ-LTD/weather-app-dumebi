@@ -34,7 +34,7 @@ export async function getApproximateLocation(): Promise<Location | null> {
   }
 }
 
-export const DEFAULT_PLACE_NAME = "Where I am";
+export const DEFAULT_PLACE_NAME = "My Location";
 
 const REVERSE_GEOCODE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
 
