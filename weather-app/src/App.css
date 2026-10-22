@@ -624,6 +624,21 @@ input {
   margin-bottom: 0;
 }
 
+.update-banner {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  border-radius: 0.75rem;
+  background: #2b2b2b;
+  border: 1px solid #555;
+  z-index: 50;
+}
+
 /* ---------- Motion ---------- */
 @keyframes now-pop {
   0% {
