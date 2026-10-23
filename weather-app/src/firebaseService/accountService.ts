@@ -6,9 +6,34 @@ import {
   sendSignInLinkToEmail,
   signInWithEmailLink,
   verifyPasswordResetCode,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 import { auth } from "./firebase";
 import { createAccountActions } from "./accountActions";
+
+async function signInWithGoogle() {
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+
+    return {
+      ok: true as const,
+      user: result.user,
+      message: "Signed in successfully.",
+    };
+  } catch (error) {
+    return {
+      ok: false as const,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Google sign-in failed.",
+
+      
+    };
+  }
+}
 
 // localStorage can throw (private windows, blocked storage). Treat that as "nothing stored".
 const safeStorage = {
@@ -37,6 +62,7 @@ const safeStorage = {
 
 export const accountService = createAccountActions({
   auth,
+  signInWithGoogle,
   sdk: {
     confirmPasswordReset,
     isSignInWithEmailLink,

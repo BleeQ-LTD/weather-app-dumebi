@@ -14,7 +14,7 @@ import HourlyForecast from "./HourlyForecast";
 import DailyForecast from "./DailyForecast";
 import DetailTiles from "./DetailTiles";
 import SidebarToggle from "./SidebarToggle";
-
+import VerifyEmailBanner from "./VerifyEmailBanner";
 interface WeatherScreenProps {
   user: User | null; // null means the visitor is a guest
   onRequestSignIn: () => void;

@@ -639,6 +639,75 @@ input {
   z-index: 50;
 }
 
+
+.auth-layout {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 56px 24px 15px;
+}
+
+.auth-widget {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+
+.auth-extra-links {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.auth-extra-links .btn {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  height: auto;
+  border-radius: 0;
+  color: #a8a8a8;
+  font-size: 14px;
+  font-weight: 400;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.auth-extra-links .btn:hover {
+  color: #ffffff;
+  background: transparent;
+  text-decoration: underline;
+}
+
+.auth-extra-links .btn:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 3px;
+}
+
+
+/* Keep the buttons usable on narrow screens */
+@media (max-width: 420px) {
+  .auth-layout {
+    padding: 24px 12px 12px;
+  }
+
+  .auth-extra-links {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
 /* ---------- Motion ---------- */
 @keyframes now-pop {
   0% {
@@ -682,4 +751,86 @@ input {
   .current-temp {
     font-size: 80px;
   }
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(22rem, 100%);
+}
+
+.auth-form input {
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid #555;
+  background: #1f1f1f;
+  color: inherit;
+  font: inherit;
+}
+
+.auth-extra-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 1.5rem;
+}
+
+.verify-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #2b2b2b;
+  border-bottom: 1px solid #555;
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(22rem, 100%);
+}
+
+.auth-form input {
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid #555;
+  background: #1f1f1f;
+  color: inherit;
+  font: inherit;
+}
+
+.auth-extra-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 1.5rem;
+}
+
+.verify-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #2b2b2b;
+  border-bottom: 1px solid #555;
 }
