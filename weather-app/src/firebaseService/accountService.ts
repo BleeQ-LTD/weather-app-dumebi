@@ -11,29 +11,28 @@ import {
 } from "firebase/auth";
 import { auth } from "./firebase";
 import { createAccountActions } from "./accountActions";
+import type { GoogleSignInResult } from "./accountActions";
 
-async function signInWithGoogle() {
+async function signInWithGoogle(): Promise<GoogleSignInResult> {
   try {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
 
     return {
-      ok: true as const,
+      ok: true,
       user: result.user,
-      message: "Signed in successfully.",
     };
   } catch (error) {
     return {
-      ok: false as const,
+      ok: false,
       message:
         error instanceof Error
           ? error.message
           : "Google sign-in failed.",
-
-      
     };
   }
 }
+
 
 // localStorage can throw (private windows, blocked storage). Treat that as "nothing stored".
 const safeStorage = {

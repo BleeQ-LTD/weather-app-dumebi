@@ -140,6 +140,7 @@ function WeatherScreen({ user, onRequestSignIn }: WeatherScreenProps) {
       </aside>
 
       <main className="main">
+        {user && <VerifyEmailBanner user={user} />}
         {/* CHANGED: notice now lives in the main view so phones see it too */}
         {notice && (
           <p className="notice" role="status">
