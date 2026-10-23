@@ -14,7 +14,7 @@ import HourlyForecast from "./HourlyForecast";
 import DailyForecast from "./DailyForecast";
 import DetailTiles from "./DetailTiles";
 import SidebarToggle from "./SidebarToggle";
-
+import VerifyEmailBanner from "./VerifyEmailBanner";
 interface WeatherScreenProps {
   user: User | null; // null means the visitor is a guest
   onRequestSignIn: () => void;
@@ -140,6 +140,7 @@ function WeatherScreen({ user, onRequestSignIn }: WeatherScreenProps) {
       </aside>
 
       <main className="main">
+        {user && <VerifyEmailBanner user={user} />}
         {/* CHANGED: notice now lives in the main view so phones see it too */}
         {notice && (
           <p className="notice" role="status">
