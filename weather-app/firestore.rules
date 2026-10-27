@@ -1,10 +1,90 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Each user can only read and write their own favourites
-    match /users/{userId}/favourites/{favouriteId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+    match /users/{userId} {
+      allow read: if request.auth != null
+                  && request.auth.uid == userId;
+
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.keys().hasAll([
+                      'firstName',
+                      'lastName',
+                      'email',
+                      'createdAt'
+                    ])
+                    && request.resource.data.keys().hasOnly([
+                      'firstName',
+                      'lastName',
+                      'email',
+                      'createdAt'
+                    ])
+                    && request.resource.data.firstName is string
+                    && request.resource.data.firstName.size() > 0
+                    && request.resource.data.firstName.size() <= 50
+                    && request.resource.data.lastName is string
+                    && request.resource.data.lastName.size() > 0
+                    && request.resource.data.lastName.size() <= 50
+                    && request.resource.data.email == request.auth.token.email
+                    && request.resource.data.createdAt == request.time;
+
+      // Preserve creation time and email on profile updates.
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.createdAt
+                       == resource.data.createdAt
+                    && request.resource.data.email
+                       == request.auth.token.email;
+
+      allow delete: if false;
+
+      match /favourites/{favouriteId} {
+
+        function isOwner() {
+          return request.auth != null
+                 && request.auth.uid == userId;
+        }
+
+        function validFavourite() {
+          let data = request.resource.data;
+
+          return data.keys().hasAll([
+                   'name',
+                   'latitude',
+                   'longitude',
+                   'createdAt'
+                 ])
+                 && data.keys().hasOnly([
+                   'name',
+                   'latitude',
+                   'longitude',
+                   'countryCode',
+                   'createdAt'
+                 ])
+                 && data.name is string
+                 && data.name.size() > 0
+                 && data.name.size() <= 120
+                 && data.latitude is number
+                 && data.latitude >= -90
+                 && data.latitude <= 90
+                 && data.longitude is number
+                 && data.longitude >= -180
+                 && data.longitude <= 180
+                 && (
+                   !('countryCode' in data)
+                   || data.countryCode is string
+                 )
+                 && data.createdAt == request.time;
+        }
+
+        allow read, delete: if isOwner();
+
+        allow create, update: if isOwner()
+                              && validFavourite();
+      }
     }
   }
 }

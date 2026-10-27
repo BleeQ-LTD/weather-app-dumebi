@@ -4,12 +4,12 @@ import AuthScreen from "./AuthScreen";
 import EmailLinkForm from "./EmailLinkForm";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import { accountService } from "../firebaseService/accountService";
+import ResetPasswordForm from "./ResetPasswordForm";
 
 type AuthView = "main" | "forgot" | "emailLink";
 
 function AuthGate(props: ComponentProps<typeof AuthScreen>) {
   const [view, setView] = useState<AuthView>("main");
-
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState("");
 
@@ -22,13 +22,26 @@ function AuthGate(props: ComponentProps<typeof AuthScreen>) {
     try {
       const result = await accountService.signInWithGoogle();
 
-      if (!result.ok) {
+      if (result.ok === false) {
         setGoogleError(result.message);
       }
+    } catch {
+      setGoogleError("Google sign-in failed. Please try again.");
     } finally {
       setGoogleBusy(false);
     }
   }
+
+  if (window.location.pathname === "/reset-password") {
+  return (
+    <ResetPasswordForm
+      onBackToSignIn={() => {
+        window.history.replaceState({}, "", "/");
+        setView("main");
+      }}
+    />
+  );
+}
 
   if (view === "forgot") {
     return (
@@ -49,32 +62,13 @@ function AuthGate(props: ComponentProps<typeof AuthScreen>) {
   return (
     <div className="auth-layout">
       <div className="auth-widget">
-        <AuthScreen {...props} />
-      </div>
-
-      <div className="auth-extra-links">
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => setView("forgot")}
-        >
-          Forgot password?
-        </button>
-
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={handleGoogleSignIn}
-          disabled={googleBusy}
-        >
-          {googleBusy ? "Signing in..." : "Sign in with Google"}
-        </button>
-
-        {googleError && (
-          <p className="error-text" role="alert">
-            {googleError}
-          </p>
-        )}
+        <AuthScreen
+          {...props}
+          onForgotPassword={() => setView("forgot")}
+          onGoogleSignIn={handleGoogleSignIn}
+          googleBusy={googleBusy}
+          googleError={googleError}
+        />
       </div>
     </div>
   );

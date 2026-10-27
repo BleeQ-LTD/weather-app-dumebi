@@ -28,7 +28,9 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await env.cleanup();
+   if (env) {
+    await env.cleanup();
+  }
 });
 
 const alice = () => env.authenticatedContext("alice").firestore();
