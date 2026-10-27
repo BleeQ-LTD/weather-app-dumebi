@@ -1,63 +1,110 @@
+
 import { useState, type FormEvent } from "react";
 import { accountService } from "../firebaseService/accountService";
 
-interface ForgotPasswordFormProps {
+type Props = {
   onBack: () => void;
-}
+};
 
-function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
+export default function ForgotPasswordForm({ onBack }: Props) {
   const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy) return;
-
-    setBusy(true);
-    setError("");
+    setLoading(true);
     setMessage("");
+    setError("");
 
-    const result = await accountService.requestPasswordReset(email);
+    try {
+      const result = await accountService.requestPasswordReset(email);
 
-    setBusy(false);
-    if (result.ok) setMessage(result.message);
-    else setError(result.message);
+      if (result.ok) {
+        setMessage(result.message);
+      } else {
+        setError(result.message);
+      }
+    } catch {
+      setError("Unable to send the reset email. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit} noValidate>
-      <h2>Reset your password</h2>
-      <p className="muted small">
-        Enter the email you signed up with and we will send a link to choose a new password.
-      </p>
+    <main className="auth-page">
+      <section className="auth-screen">
+        <div className="auth-card">
+          <div className="auth-brand">
+            <h1>Forgot your password?</h1>
+            <p className="muted">
+              It happens. Enter your email and we'll send you a secure
+              link to reset your password.
+            </p>
+          </div>
 
-      <label htmlFor="forgot-email">Email</label>
-      <input
-        id="forgot-email"
-        type="email"
-        autoComplete="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
+          {message ? (
+            <div className="auth-form">
+              <p className="success-text" role="status">
+                {message}
+              </p>
+              <p className="muted">
+                Check your inbox and spam folder for the reset email.
+              </p>
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={onBack}
+              >
+                Return to sign in
+              </button>
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={() => setMessage("")}
+              >
+                Try another email
+              </button>
+            </div>
+          ) : (
+            <form className="auth-form" onSubmit={handleSubmit}>
+              <div className="field">
+                <label htmlFor="forgot-email">Email address</label>
+                <input
+                  id="forgot-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
+                  required
+                />
+              </div>
 
-      {error && (
-        <p className="error-text" role="alert">
-          {error}
-        </p>
-      )}
-      {message && <p role="status">{message}</p>}
+              {error && (
+                <p className="error-text" role="alert">{error}</p>
+              )}
 
-      <button type="submit" className="btn" disabled={busy}>
-        {busy ? "Sending..." : "Send reset link"}
-      </button>
-      <button type="button" className="btn btn-ghost" onClick={onBack}>
-        Back to sign in
-      </button>
-    </form>
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={loading}
+              >
+                {loading ? "Sending reset link…" : "Send reset link"}
+              </button>
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={onBack}
+              >
+                Back to sign in
+              </button>
+            </form>
+          )}
+        </div>
+      </section>
+    </main>
   );
 }
-
-export default ForgotPasswordForm;

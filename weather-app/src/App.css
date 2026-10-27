@@ -696,6 +696,49 @@ input {
 }
 
 
+/* Forgot-password link directly below the primary sign-in button */
+.auth-forgot-link {
+  display: block;
+  align-self: center;
+  margin: 8px auto 0;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  color: #aaa;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.auth-forgot-link:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+/* Google button inside the authentication card */
+.auth-google-option {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.auth-google-option .btn {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.auth-google-option .error-text {
+  margin-top: 8px;
+}
+
+.success-text {
+  color: var(--success-color, #15803d);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(34, 197, 94, 0.1);
+}
+
 /* Keep the buttons usable on narrow screens */
 @media (max-width: 420px) {
   .auth-layout {

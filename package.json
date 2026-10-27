@@ -4,10 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "test": "vitest"
+    "test": "firebase emulators:exec --only firestore --project demo-weather-rules \"vitest run\""
   },
   "repository": {
     "type": "git",

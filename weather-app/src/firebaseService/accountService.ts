@@ -13,9 +13,16 @@ import { auth } from "./firebase";
 import { createAccountActions } from "./accountActions";
 import type { GoogleSignInResult } from "./accountActions";
 
+
 async function signInWithGoogle(): Promise<GoogleSignInResult> {
   try {
     const provider = new GoogleAuthProvider();
+
+    // Always request the Google account chooser.
+    provider.setCustomParameters({
+      prompt: "select_account",
+    });
+
     const result = await signInWithPopup(auth, provider);
 
     return {
@@ -32,6 +39,7 @@ async function signInWithGoogle(): Promise<GoogleSignInResult> {
     };
   }
 }
+
 
 
 // localStorage can throw (private windows, blocked storage). Treat that as "nothing stored".

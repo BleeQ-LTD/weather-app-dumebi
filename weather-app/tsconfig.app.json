@@ -22,5 +22,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "global.d.ts"],
+  "include": ["src", "global.d.ts", "rules-tests/firebase.rules.test.ts"],
 }
