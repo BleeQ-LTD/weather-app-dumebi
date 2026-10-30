@@ -6,42 +6,10 @@ import {
   sendSignInLinkToEmail,
   signInWithEmailLink,
   verifyPasswordResetCode,
-  GoogleAuthProvider,
-  signInWithPopup,
 } from "firebase/auth";
 import { auth } from "./firebase";
 import { createAccountActions } from "./accountActions";
-import type { GoogleSignInResult } from "./accountActions";
-
-
-async function signInWithGoogle(): Promise<GoogleSignInResult> {
-  try {
-    const provider = new GoogleAuthProvider();
-
-    // Always request the Google account chooser.
-    provider.setCustomParameters({
-      prompt: "select_account",
-    });
-
-    const result = await signInWithPopup(auth, provider);
-
-    return {
-      ok: true,
-      user: result.user,
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Google sign-in failed.",
-    };
-  }
-}
-
-
-
+ 
 // localStorage can throw (private windows, blocked storage). Treat that as "nothing stored".
 const safeStorage = {
   getItem(key: string): string | null {
@@ -66,10 +34,11 @@ const safeStorage = {
     }
   },
 };
-
+ 
+// Google sign-in lives in authService.signInWithGoogle, which also creates
+// the users/{uid} profile and refuses unregistered accounts on the Sign in tab.
 export const accountService = createAccountActions({
   auth,
-  signInWithGoogle,
   sdk: {
     confirmPasswordReset,
     isSignInWithEmailLink,
