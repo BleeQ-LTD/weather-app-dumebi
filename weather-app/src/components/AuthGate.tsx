@@ -1,10 +1,13 @@
-
 import { useState, type ComponentProps } from "react";
 import AuthScreen from "./AuthScreen";
 import EmailLinkForm from "./EmailLinkForm";
 import ForgotPasswordForm from "./ForgotPasswordForm";
-import { accountService } from "../firebaseService/accountService";
-import ResetPasswordForm from "./ResetPasswordForm";
+import {
+  AuthError,
+  getAuthErrorMessage,
+  signInWithGoogle,
+} from "../firebaseService/authService";
+import type { GoogleAuthMode } from "../firebaseService/authService";
 
 type AuthView = "main" | "forgot" | "emailLink";
 
@@ -13,35 +16,26 @@ function AuthGate(props: ComponentProps<typeof AuthScreen>) {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState("");
 
-  async function handleGoogleSignIn() {
+  async function handleGoogleSignIn(mode: GoogleAuthMode) {
     if (googleBusy) return;
 
     setGoogleBusy(true);
     setGoogleError("");
 
     try {
-      const result = await accountService.signInWithGoogle();
+      await signInWithGoogle(mode);
+    } catch (error) {
+      // Closing the popup is not an error worth showing.
+      const closed =
+        error instanceof AuthError &&
+        (error.code === "auth/popup-closed-by-user" ||
+          error.code === "auth/cancelled-popup-request");
 
-      if (result.ok === false) {
-        setGoogleError(result.message);
-      }
-    } catch {
-      setGoogleError("Google sign-in failed. Please try again.");
+      if (!closed) setGoogleError(getAuthErrorMessage(error));
     } finally {
       setGoogleBusy(false);
     }
   }
-
-  if (window.location.pathname === "/reset-password") {
-  return (
-    <ResetPasswordForm
-      onBackToSignIn={() => {
-        window.history.replaceState({}, "", "/");
-        setView("main");
-      }}
-    />
-  );
-}
 
   if (view === "forgot") {
     return (
