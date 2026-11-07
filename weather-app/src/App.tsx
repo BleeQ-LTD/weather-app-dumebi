@@ -1,34 +1,44 @@
+
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { subscribeToAuth } from "./firebaseService/authService";
 import AuthGate from "./components/AuthGate";
 import WeatherScreen from "./components/WeatherScreen";
+import ProfilePage from "./components/ProfilePage";
 import "./App.css";
 import { accountService } from "./firebaseService/accountService";
 import EmailLinkLanding from "./components/EmailLinkLanding";
 import ResetPasswordForm from "./components/ResetPasswordForm";
+import ProfileGate from "./components/ProfileGate";
 
-// Signed in -> weather. Signed out -> sign-in screen, unless the visitor chose guest mode.
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [guest, setGuest] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
   const [emailLinkMode, setEmailLinkMode] = useState(() =>
     accountService.isEmailLink(window.location.href)
   );
+
   const [resetMode, setResetMode] = useState(
-    () => window.location.pathname === "/reset-password"
+    () =>
+      accountService.isPasswordResetLink(window.location.href) ||
+      window.location.pathname.replace(/\/+$/, "") === "/reset-password"
   );
 
-  // Listens for sign in / sign out (returns the unsubscribe function)
   useEffect(() => {
     return subscribeToAuth((currentUser) => {
       setUser(currentUser);
       setAuthReady(true);
+
+      if (!currentUser) {
+        setProfileOpen(false);
+        setGuest(false);
+      }
     });
   }, []);
 
-  // Opened from the password-reset email: show this whether or not anyone is signed in.
   if (resetMode) {
     return (
       <ResetPasswordForm
@@ -53,11 +63,33 @@ function App() {
   }
 
   if (user) {
-    return <WeatherScreen key={user.uid} user={user} onRequestSignIn={() => setGuest(false)} />;
+    return (
+      <ProfileGate key={user.uid} user={user}>
+        {profileOpen ? (
+          <ProfilePage
+            user={user}
+            onBack={() => setProfileOpen(false)}
+          />
+        ) : (
+          <WeatherScreen
+            key={user.uid}
+            user={user}
+            onRequestSignIn={() => setGuest(false)}
+            onOpenProfile={() => setProfileOpen(true)}
+          />
+        )}
+      </ProfileGate>
+    );
   }
 
   if (guest) {
-    return <WeatherScreen key="guest" user={null} onRequestSignIn={() => setGuest(false)} />;
+    return (
+      <WeatherScreen
+        key="guest"
+        user={null}
+        onRequestSignIn={() => setGuest(false)}
+      />
+    );
   }
 
   return <AuthGate onContinueAsGuest={() => setGuest(true)} />;

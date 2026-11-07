@@ -1,12 +1,24 @@
-import express from "express";
+import { createApp } from "./app.js";
+import { loadConfig } from "./config.js";
+import { createResetLinkGenerator } from "./firebaseAdmin.js";
+import { createSendByteMailer } from "./sendbyte.js";
 
-const app = express();
-app.use(express.json());
+const config = loadConfig();
 
-app.get("/api/hello", (_req, res) => {
-  res.json({ message: "Hello from Node.js!" });
+const app = createApp({
+  appOrigin: config.appOrigin,
+  generateLink: createResetLinkGenerator(config.firebaseServiceAccount),
+  sendMail: createSendByteMailer({
+    apiKey: config.sendbyteApiKey,
+    from: config.mailFrom,
+    baseUrl: config.sendbyteBaseUrl,
+  }),
 });
 
-app.listen(3000, () => {
-  console.log("Backend running at http://localhost:3000");
+const server = app.listen(config.port, () => {
+  console.log(`Backend running at http://localhost:${config.port}`);
+});
+
+process.on("SIGTERM", () => {
+  server.close(() => process.exit(0));
 });

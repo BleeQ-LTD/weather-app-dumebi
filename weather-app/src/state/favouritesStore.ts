@@ -81,12 +81,13 @@ export class FavouritesStore {
           );
         });
       })
-      .catch((err) => {
+            .catch((err) => {
+        // Signed out or switched account while loading: nothing to report
+        if (generation !== this.generation) return;
+
         console.error("Loading favourites failed:", err);
-        if (generation === this.generation) {
-          // loaded: true so the Save button isn't disabled forever after an error
-          this.update({ error: "Could not load your favourites.", loaded: true });
-        }
+        // loaded: true so the Save button isn't disabled forever after an error
+        this.update({ error: "Could not load your favourites.", loaded: true });
       });
   }
 

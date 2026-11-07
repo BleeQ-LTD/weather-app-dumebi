@@ -1,4 +1,7 @@
+
 import type { CurrentWeather, DailyWeather } from "../weatherService/weatherTypes";
+import type { TemperatureUnit } from "../firebaseService/profileService";
+import { formatTemperature } from "../weatherService/temperatureUtils";
 import { getWeatherIcon } from "../weatherService/weatherUtils";
 
 interface CurrentConditionsProps {
@@ -8,7 +11,8 @@ interface CurrentConditionsProps {
   today: DailyWeather | undefined;
   isFavourite: boolean;
   isGuest: boolean;
-  saveDisabled: boolean; // true while favourites are still loading
+  saveDisabled: boolean;
+  temperatureUnit: TemperatureUnit;
   onToggleFavourite: () => void;
 }
 
@@ -20,22 +24,32 @@ function CurrentConditions({
   isFavourite,
   isGuest,
   saveDisabled,
+  temperatureUnit,
   onToggleFavourite,
 }: CurrentConditionsProps) {
   return (
     <header className="current">
       {isMyLocation && <p className="current-label">My Location</p>}
       <h1 className="current-name">{name}</h1>
-      <p className="current-temp">{Math.round(current.temperature)}°</p>
+
+      <p className="current-temp">
+        {formatTemperature(current.temperature, temperatureUnit)}
+      </p>
+
       <p className="current-condition">
-        <span aria-hidden="true">{getWeatherIcon(current.weatherCode, current.isDay)}</span>{" "}
+        <span aria-hidden="true">
+          {getWeatherIcon(current.weatherCode, current.isDay)}
+        </span>{" "}
         {current.weatherDescription}
       </p>
+
       {today && (
         <p className="current-range">
-          H:{Math.round(today.maxTemp)}° L:{Math.round(today.minTemp)}°
+          H:{formatTemperature(today.maxTemp, temperatureUnit)}{" "}
+          L:{formatTemperature(today.minTemp, temperatureUnit)}
         </p>
       )}
+
       <button
         type="button"
         className="btn btn-ghost"

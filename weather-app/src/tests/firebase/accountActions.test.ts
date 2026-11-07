@@ -24,7 +24,7 @@ function setup(overrides: Partial<AccountSdk> = {}, stored: Record<string, strin
   const store = new Map<string, string>(Object.entries(stored));
 
   const sdk: AccountSdk = {
-    sendPasswordResetEmail: async (...args) => {
+    requestPasswordReset: async (...args) => {
       calls.reset.push(args);
     },
     verifyPasswordResetCode: async () => "ada@example.com",
@@ -64,17 +64,17 @@ function setup(overrides: Partial<AccountSdk> = {}, stored: Record<string, strin
 }
 
 describe("TC-AUTH-101 forgot password", () => {
-  it("sends the reset email with a return address on this site", async () => {
+  it("asks for the reset email to be sent to the trimmed address", async () => {
     const { actions, calls } = setup();
     const result = await actions.requestPasswordReset("  ada@example.com ");
 
     expect(result.ok).toBe(true);
-    expect(calls.reset).toEqual([[fakeAuth, "ada@example.com", { url: "https://app.example.com/" }]]);
+    expect(calls.reset).toEqual([["ada@example.com"]]);
   });
 
   it("gives the same answer when no account exists, so it cannot be used to probe for accounts", async () => {
     const known = await setup().actions.requestPasswordReset("ada@example.com");
-    const unknown = await setup({ sendPasswordResetEmail: fail("auth/user-not-found") }).actions.requestPasswordReset(
+    const unknown = await setup({ requestPasswordReset: fail("auth/user-not-found") }).actions.requestPasswordReset(
       "nobody@example.com"
     );
 
@@ -90,7 +90,7 @@ describe("TC-AUTH-101 forgot password", () => {
   });
 
   it("turns rate limiting into a readable message", async () => {
-    const { actions } = setup({ sendPasswordResetEmail: fail("auth/too-many-requests") });
+    const { actions } = setup({ requestPasswordReset: fail("auth/too-many-requests") });
 
     expect(await actions.requestPasswordReset("ada@example.com")).toEqual({
       ok: false,
@@ -220,5 +220,50 @@ describe("TC-AUTH-105 messages and password rules", () => {
 
   it("explains a mismatch", () => {
     expect(validateNewPassword("longenough1", "longenough2")).toBe("The two passwords do not match.");
+  });
+});
+
+describe("TC-AUTH-106 password reset link detection", () => {
+  const { actions } = setup();
+
+  it("recognises a reset link on the site root", () => {
+    expect(
+      actions.isPasswordResetLink("https://app.example.com/?mode=resetPassword&oobCode=abc&apiKey=k")
+    ).toBe(true);
+  });
+
+  it("recognises a reset link on /reset-password", () => {
+    expect(
+      actions.isPasswordResetLink("https://app.example.com/reset-password?mode=resetPassword&oobCode=abc")
+    ).toBe(true);
+  });
+
+  it.each([
+    "https://app.example.com/?mode=resetPassword",
+    "https://app.example.com/?mode=verifyEmail&oobCode=abc",
+    "https://app.example.com/",
+    "not a url",
+  ])("ignores %s", (href) => {
+    expect(actions.isPasswordResetLink(href)).toBe(false);
+  });
+});
+
+describe("TC-AUTH-107 reset request failures", () => {
+  it("explains a network problem", async () => {
+    const { actions } = setup({ requestPasswordReset: fail("auth/network-request-failed") });
+
+    expect(await actions.requestPasswordReset("ada@example.com")).toEqual({
+      ok: false,
+      message: "Network problem. Check your connection and try again.",
+    });
+  });
+
+  it("explains a rejected address from the server", async () => {
+    const { actions } = setup({ requestPasswordReset: fail("auth/invalid-email") });
+
+    expect(await actions.requestPasswordReset("ada@example.com")).toEqual({
+      ok: false,
+      message: "Enter a valid email address.",
+    });
   });
 });

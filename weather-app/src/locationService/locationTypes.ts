@@ -20,6 +20,8 @@ export interface GeocodingResult {
   country_code?: string;
   admin1?: string;
   admin2?: string;
+  population?: number; // inhabitants, when Open-Meteo knows it
+  feature_code?: string; // GeoNames type, for example PPLC for a capital
 }
 
 export interface GeocodingResponse {
