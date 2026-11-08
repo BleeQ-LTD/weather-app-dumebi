@@ -19,6 +19,15 @@ export default defineConfig({
       },
     },
   ],
+  server: {
+    // The reset email links back to this address, so it must not change.
+    port: 5174,
+    strictPort: true,
+    // In development, /api calls go to the Express server (npm run server).
+    proxy: {
+      '/api': 'http://localhost:3000',
+    },
+  },
   test: {
     environment: 'node',
   },

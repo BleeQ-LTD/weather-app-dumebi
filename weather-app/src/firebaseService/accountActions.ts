@@ -1,4 +1,3 @@
-
 import type {
   ActionCodeSettings,
   Auth,
@@ -27,11 +26,8 @@ export type ResetCodeResult =
 // Firebase functions used by this file.
 // Passing them in keeps the logic testable without Firebase.
 export interface AccountSdk {
-  sendPasswordResetEmail(
-    auth: Auth,
-    email: string,
-    settings?: ActionCodeSettings | null
-  ): Promise<void>;
+  // Asks for the password-reset email to be sent (our server does this).
+  requestPasswordReset(email: string): Promise<void>;
 
   verifyPasswordResetCode(auth: Auth, code: string): Promise<string>;
 
@@ -178,9 +174,7 @@ export function createAccountActions({
       }
 
       try {
-        await sdk.sendPasswordResetEmail(auth, email, {
-          url: continueUrl(),
-        });
+        await sdk.requestPasswordReset(email);
       } catch (err) {
         const code = authErrorCode(err);
 
@@ -228,6 +222,19 @@ export function createAccountActions({
 
     isEmailLink(href: string): boolean {
       return sdk.isSignInWithEmailLink(auth, href);
+    },
+
+    // True when the page was opened from a password-reset email.
+    isPasswordResetLink(href: string): boolean {
+      try {
+        const params = new URL(href).searchParams;
+        return (
+          params.get("mode") === "resetPassword" &&
+          (params.get("oobCode") ?? "") !== ""
+        );
+      } catch {
+        return false;
+      }
     },
 
     // Finish sign-in when the user opens the emailed link

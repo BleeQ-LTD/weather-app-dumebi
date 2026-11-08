@@ -81,18 +81,19 @@ export class FavouritesStore {
           );
         });
       })
-      .catch((err) => {
+            .catch((err) => {
+        // Signed out or switched account while loading: nothing to report
+        if (generation !== this.generation) return;
+
         console.error("Loading favourites failed:", err);
-        if (generation === this.generation) {
-          // loaded: true so the Save button isn't disabled forever after an error
-          this.update({ error: "Could not load your favourites.", loaded: true });
-        }
+        // loaded: true so the Save button isn't disabled forever after an error
+        this.update({ error: "Could not load your favourites.", loaded: true });
       });
   }
 
-  async add(location: Location): Promise<void> {
+  async add(location: Location): Promise<boolean> {
     const uid = this.uid;
-    if (!uid) return;
+    if (!uid) return false;
 
     const generation = this.generation;
     const id = makeFavouriteId(location);
@@ -102,23 +103,27 @@ export class FavouritesStore {
 
     try {
       const saved = await addFavourite(uid, location);
-      if (!this.isCurrent(generation, id, operation)) return;
+      if (!this.isCurrent(generation, id, operation)) return false;
 
       this.localChanges.set(id, { type: "added", item: saved });
       this.update({
         favourites: [saved, ...this.snapshot.favourites.filter((f) => f.id !== id)],
       });
+
+      return true;
     } catch (err) {
       console.error("Saving favourite failed:", err);
+      
       if (generation === this.generation) {
         this.update({ error: "Could not save this location. Please try again." });
       }
+      return false;
     }
   }
 
-  async remove(id: string): Promise<void> {
-    const uid = this.uid;
-    if (!uid) return;
+async remove(id: string): Promise<boolean> {
+      const uid = this.uid;
+    if (!uid) return false;
 
     const generation = this.generation;
     const operation = this.startOperation(id);
@@ -127,15 +132,19 @@ export class FavouritesStore {
 
     try {
       await removeFavourite(uid, id);
-      if (!this.isCurrent(generation, id, operation)) return;
+      if (!this.isCurrent(generation, id, operation)) return false;
 
       this.localChanges.set(id, { type: "removed" });
-      this.update({ favourites: this.snapshot.favourites.filter((f) => f.id !== id) });
+      this.update({ 
+        favourites: this.snapshot.favourites.filter((f) => f.id !== id) 
+      });
+      return true;
     } catch (err) {
       console.error("Removing favourite failed:", err);
       if (generation === this.generation) {
         this.update({ error: "Could not remove this location. Please try again." });
       }
+      return false;
     }
   }
 

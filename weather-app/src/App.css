@@ -20,6 +20,56 @@
   }
 }
 
+/* Prevent the browser page from scrolling */
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* Keep the authentication screens within the viewport */
+.auth-page,
+.auth-layout {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Keep the main authentication widget centred */
+.auth-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.weather-app {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.sidebar {
+  position: relative;
+  flex: 0 0 320px;
+  width: 320px;
+  transition: width 0.25s ease;
+}
+
+.sidebar.collapsed {
+  flex-basis: 64px;
+  width: 64px;
+}
+
+.weather-main {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ---------- Shared ---------- */
 .muted {
   color: var(--muted);
@@ -153,7 +203,8 @@ input {
 
 /* ---------- Weather screen layout ---------- */
 :root {
-  --page-bg: #242424; /* same as the page background in index.css */
+  --page-bg: #242424;
+  /* same as the page background in index.css */
 }
 
 @media (prefers-color-scheme: light) {
@@ -166,7 +217,8 @@ input {
   max-width: 1100px;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 72px 24px 24px; /* top room for the floating button */
+  padding: 72px 24px 24px;
+  /* top room for the floating button */
 }
 
 /* Floating sidebar button: always visible, including on phones */
@@ -204,7 +256,8 @@ input {
   left: 0;
   z-index: 25;
   width: min(320px, 85vw);
-  padding: 76px 16px 16px; /* clears the floating button */
+  padding: 76px 16px 16px;
+  /* clears the floating button */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -214,7 +267,8 @@ input {
   border-right: 1px solid var(--border);
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
   transform: translateX(-100%);
-  visibility: hidden; /* also removes the hidden links and buttons from the tab order */
+  visibility: hidden;
+  /* also removes the hidden links and buttons from the tab order */
   transition: transform 0.25s ease, visibility 0s linear 0.25s;
 }
 
@@ -959,12 +1013,15 @@ button:disabled {
   0% {
     transform: scale(1);
   }
+
   40% {
     transform: scale(1.18);
   }
+
   70% {
     transform: scale(0.94);
   }
+
   100% {
     transform: scale(1);
   }
@@ -1079,4 +1136,141 @@ button:disabled {
   padding: 0.5rem 1rem;
   background: #2b2b2b;
   border-bottom: 1px solid #555;
+}
+
+/* =========================================
+   DESKTOP FULL-HEIGHT FLEXIBLE LAYOUT
+   ========================================= */
+
+@media (min-width: 769px) {
+  .app {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+
+    width: 100%;
+    max-width: none;
+    /* the base .app is a centred 1100px column */
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    /* the base .app reserves room for the floating button */
+
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .app .sidebar {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch;
+
+    position: relative !important;
+    inset: auto !important;
+    transform: none !important;
+
+    flex: 0 0 280px;
+    width: 280px;
+
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+
+    padding: 56px 10px 16px;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+
+    transition: width 0.25s ease, flex-basis 0.25s ease;
+  }
+
+  /* Keep sidebar content visible */
+  .app .sidebar>* {
+    flex-shrink: 0;
+  }
+
+  /* Keep account controls at the bottom when space allows */
+  .app .sidebar .sidebar-footer {
+    margin-top: auto;
+    padding-top: 20px;
+    flex-shrink: 0;
+  }
+
+  /* Collapsed sidebar */
+  .app.sidebar-collapsed .sidebar {
+    flex: 0 0 64px;
+    width: 64px;
+    padding: 56px 0 16px;
+    overflow: hidden;
+  }
+
+  .app.sidebar-collapsed .sidebar>*:not(.sidebar-toggle) {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* Main content: a scrolling column with space between the panels */
+  .app .main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    /* display: block had removed the gap between panels */
+    flex: 1 1 0;
+
+    width: 0;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+
+    box-sizing: border-box;
+    padding: 20px 24px;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  /* Panels keep their natural height; the column scrolls instead of squashing them.
+     Content stays a readable width on very wide screens (delete these three
+     lines of width rules if you would rather it fill the window). */
+  .app .main>* {
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 900px;
+    margin-inline: auto;
+  }
+
+  /* Sidebar toggle button - always visible */
+  .app .icon-button.floating {
+    position: fixed !important;
+    top: 12px;
+    left: 12px;
+    z-index: 1000;
+
+    display: inline-grid;
+    place-items: center;
+
+    width: 40px;
+    height: 40px;
+
+    cursor: pointer;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .app .backdrop {
+    display: none !important;
+  }
+
+  /* Slimmer scrollbar under the hourly forecast */
+  .hourly {
+    scrollbar-width: thin;
+  }
 }

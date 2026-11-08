@@ -1,7 +1,14 @@
+
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
-import { logOut } from "../firebaseService/authService";
-import { isSamePlace, makeFavouriteId } from "../firebaseService/favouriteId"; // CHANGED: import path + isSamePlace
+import {
+  isSamePlace,
+  makeFavouriteId,
+} from "../firebaseService/favouriteId";
+import {
+  getUserProfile,
+  type TemperatureUnit,
+} from "../firebaseService/profileService";
 import type { Location } from "../locationService/locationTypes";
 import { useCurrentLocation } from "../hooks/useCurrentLocation";
 import { useFavourites } from "../hooks/useFavourites";
@@ -14,25 +21,73 @@ import HourlyForecast from "./HourlyForecast";
 import DailyForecast from "./DailyForecast";
 import DetailTiles from "./DetailTiles";
 import SidebarToggle from "./SidebarToggle";
+import { getLastLocation } from "../locationService/lastLocation";
+import { saveLastLocation } from "../locationService/lastLocation";
 
 interface WeatherScreenProps {
-  user: User | null; // null means the visitor is a guest
+  user: User | null;
+  onOpenProfile?: () => void;
   onRequestSignIn: () => void;
 }
 
-function WeatherScreen({ user, onRequestSignIn }: WeatherScreenProps) {
+function WeatherScreen({
+  user,
+  onRequestSignIn,
+  onOpenProfile
+}: WeatherScreenProps) {
   const isGuest = user === null;
 
-  const { status, myLocation, notice } = useCurrentLocation();
-  const [selected, setSelected] = useState<Location | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [temperatureUnit, setTemperatureUnit] =
+    useState<TemperatureUnit>("celsius");
 
-  // CHANGED: no FALLBACK_LOCATION; null if nothing could be detected
+  useEffect(() => {
+    let active = true;
+
+    async function loadTemperaturePreference() {
+      if (!user) {
+        setTemperatureUnit("celsius");
+        return;
+      }
+
+      try {
+        const profile = await getUserProfile(user.uid);
+
+        if (active && profile) {
+          setTemperatureUnit(profile.temperatureUnit);
+        }
+      } catch (error) {
+        console.error("Unable to load temperature preference:", error);
+      }
+    }
+
+    loadTemperaturePreference();
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const { status, myLocation, notice } = useCurrentLocation();
+  const [selected, setSelected] = useState<Location | null>(
+    () => getLastLocation()
+  );
+  // Desktop: sidebar is expanded by default.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Mobile: drawer is closed by default.
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   const location = selected ?? myLocation;
 
-  const { forecast, loading, error, refreshFailed } = useForecast(location);
+  const { forecast, loading, error, refreshFailed } =
+    useForecast(location);
 
-  // CHANGED: also read `loaded` from the hook
+  useEffect(() => {
+    if (!location || !forecast || loading || error) return;
+
+    saveLastLocation(location);
+  }, [location, forecast, loading, error]);
+
   const {
     favourites,
     loaded: favouritesLoaded,
@@ -41,21 +96,33 @@ function WeatherScreen({ user, onRequestSignIn }: WeatherScreenProps) {
     remove,
   } = useFavourites(user?.uid ?? null);
 
-  // CHANGED: "Saved" is decided by distance, so it works after a reload
-  const savedMatches = location ? favourites.filter((f) => isSamePlace(f, location)) : [];
-  const isFavourite = savedMatches.length > 0;
-  const currentId = savedMatches[0]?.id ?? (location ? makeFavouriteId(location) : "");
-  const isMyLocation = Boolean(myLocation && location && isSamePlace(myLocation, location));
+  const savedMatches = location
+    ? favourites.filter((f) => isSamePlace(f, location))
+    : [];
 
-  // While the overlay is open: Escape closes it and the page behind it doesn't scroll
+  const isFavourite = savedMatches.length > 0;
+
+  const currentId =
+    savedMatches[0]?.id ??
+    (location ? makeFavouriteId(location) : "");
+
+  const isMyLocation = Boolean(
+    myLocation && location && isSamePlace(myLocation, location)
+  );
+
+  // Handle Escape and prevent background scrolling
+  // while the mobile sidebar is open.
   useEffect(() => {
-    if (!sidebarOpen) return;
+    if (!mobileSidebarOpen) return;
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setSidebarOpen(false);
+      if (event.key === "Escape") {
+        setMobileSidebarOpen(false);
+      }
     }
 
     document.addEventListener("keydown", handleKeyDown);
+
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -63,53 +130,86 @@ function WeatherScreen({ user, onRequestSignIn }: WeatherScreenProps) {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [sidebarOpen]);
+  }, [mobileSidebarOpen]);
 
-  // Picking a place closes the overlay so the weather is visible straight away
+  // Desktop minimizes the sidebar.
+  // Mobile opens and closes the drawer.
+  function handleSidebarToggle() {
+    const isDesktop = window.matchMedia(
+      "(min-width: 769px)"
+    ).matches;
+
+    if (isDesktop) {
+      setSidebarCollapsed((collapsed) => !collapsed);
+    } else {
+      setMobileSidebarOpen((open) => !open);
+    }
+  }
+
   function handleSelect(next: Location) {
     setSelected(next);
-    setSidebarOpen(false);
+
+    // Close the drawer only on mobile.
+    setMobileSidebarOpen(false);
   }
 
   function handleToggleFavourite() {
     if (!location) return;
-    if (isGuest) onRequestSignIn();
-    else if (isFavourite) savedMatches.forEach((f) => remove(f.id)); // CHANGED: also clears old duplicates
-    else add(location);
-  }
 
-  async function handleSignOut() {
-    try {
-      await logOut();
-    } catch (err) {
-      console.error("Sign out failed:", err);
+    if (isGuest) {
+      onRequestSignIn();
+    } else if (isFavourite) {
+      savedMatches.forEach((f) => remove(f.id));
+    } else {
+      add(location);
     }
   }
 
-  return (
-    <div className="app">
-      {/* Floating, so it is always reachable (including on phones) */}
-      <SidebarToggle open={sidebarOpen} onToggle={() => setSidebarOpen((open) => !open)} />
+  const appClassName = [
+    "app",
+    sidebarCollapsed ? "sidebar-collapsed" : "sidebar-expanded",
+    mobileSidebarOpen ? "mobile-sidebar-open" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-      {sidebarOpen && (
-        <div className="backdrop" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+  return (
+    <div className={appClassName}>
+      <SidebarToggle
+        open={!sidebarCollapsed}
+        onToggle={handleSidebarToggle}
+      />
+
+      {mobileSidebarOpen && (
+        <div
+          className="backdrop"
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
       )}
 
-      <aside className={sidebarOpen ? "sidebar open" : "sidebar"} aria-label="Locations and account">
-        <LocationSearch onSelect={handleSelect} />
-
+      {/* Sidebar */}
+      <aside
+        className={`sidebar ${mobileSidebarOpen ? "open" : ""
+          } ${sidebarCollapsed ? "collapsed" : ""}`}
+        aria-label="Locations and account"
+      >
         {myLocation && (
           <button
             type="button"
-            className={isMyLocation ? "location-row active" : "location-row"}
+            className={
+              isMyLocation
+                ? "location-row active"
+                : "location-row"
+            }
             onClick={() => handleSelect(myLocation)}
           >
             <span>📍 My Location</span>
-            <span className="muted small">{myLocation.name}</span>
+            <span className="muted small">
+              {myLocation.name}
+            </span>
           </button>
         )}
-
-        {/* CHANGED: the notice was removed from the sidebar (it is in <main> now) */}
 
         {isGuest ? (
           <GuestInfo onRequestSignIn={onRequestSignIn} />
@@ -121,7 +221,12 @@ function WeatherScreen({ user, onRequestSignIn }: WeatherScreenProps) {
               onSelect={handleSelect}
               onRemove={remove}
             />
-            {favouritesError && <p className="error-text">{favouritesError}</p>}
+
+            {favouritesError && (
+              <p className="error-text">
+                {favouritesError}
+              </p>
+            )}
           </>
         )}
 
@@ -129,8 +234,13 @@ function WeatherScreen({ user, onRequestSignIn }: WeatherScreenProps) {
           {user ? (
             <>
               <span className="muted small">{user.email}</span>
-              <button type="button" className="btn btn-ghost" onClick={handleSignOut}>
-                Sign out
+
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={onOpenProfile}
+              >
+                Profile
               </button>
             </>
           ) : (
@@ -139,22 +249,43 @@ function WeatherScreen({ user, onRequestSignIn }: WeatherScreenProps) {
         </div>
       </aside>
 
+      {/* Main weather screen */}
       <main className="main">
-        
-        {/* CHANGED: notice now lives in the main view so phones see it too */}
+
+        {/* Search bar: always above the location heading */}
+        <div className="main-location-search">
+          <LocationSearch onSelect={handleSelect} />
+        </div>
+
         {notice && (
           <p className="notice" role="status">
             {notice}
           </p>
         )}
 
-        {/* CHANGED: loading / nothing-detected messages no longer depend on FALLBACK_LOCATION */}
-        {!location && status === "detecting" && <p className="status">Finding your location...</p>}
-        {!location && status === "ready" && (
-          <p className="status">Search for a city to see its weather.</p>
+        {!location && status === "detecting" && (
+          <p className="status">
+            Finding your location...
+          </p>
         )}
-        {location && loading && <p className="status">Loading weather...</p>}
-        {location && !loading && error && <p className="status error-text">{error}</p>}
+
+        {!location && status === "ready" && (
+          <p className="status">
+            Search for a city to see its weather.
+          </p>
+        )}
+
+        {location && loading && (
+          <p className="status">
+            Loading weather...
+          </p>
+        )}
+
+        {location && !loading && error && (
+          <p className="status error-text">
+            {error}
+          </p>
+        )}
 
         {location && forecast && !loading && !error && (
           <>
@@ -166,30 +297,42 @@ function WeatherScreen({ user, onRequestSignIn }: WeatherScreenProps) {
 
             <CurrentConditions
               name={location.name}
+              temperatureUnit={temperatureUnit}
               isMyLocation={isMyLocation}
               current={forecast.current}
               today={forecast.daily[0]}
               isFavourite={isFavourite}
               isGuest={isGuest}
-              saveDisabled={!isGuest && !favouritesLoaded} // CHANGED: this is the missing prop
+              saveDisabled={!isGuest && !favouritesLoaded}
               onToggleFavourite={handleToggleFavourite}
             />
 
-            <HourlyForecast hours={forecast.hourly} currentTime={forecast.current.time} />
+            <HourlyForecast
+              hours={forecast.hourly}
+              currentTime={forecast.current.time}
+              temperatureUnit={temperatureUnit}
+            />
 
             <div className="details-layout">
-              <DailyForecast days={forecast.daily} />
+              <DailyForecast
+                days={forecast.daily}
+                temperatureUnit={temperatureUnit}
+              />
+
               <DetailTiles
                 current={forecast.current}
                 details={forecast.details}
                 today={forecast.daily[0]}
+                temperatureUnit={temperatureUnit}
               />
             </div>
           </>
         )}
 
         <p className="attribution muted small">
-          <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a>
+          <a href="https://open-meteo.com/">
+            Weather data by Open-Meteo.com
+          </a>
         </p>
       </main>
     </div>
