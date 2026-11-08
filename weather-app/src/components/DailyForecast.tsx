@@ -1,4 +1,7 @@
+
 import type { DailyWeather } from "../weatherService/weatherTypes";
+import type { TemperatureUnit } from "../firebaseService/profileService";
+import { formatTemperature } from "../weatherService/temperatureUtils";
 import {
   formatForecastTitle,
   getDayLabel,
@@ -8,9 +11,10 @@ import {
 
 interface DailyForecastProps {
   days: DailyWeather[];
+  temperatureUnit: TemperatureUnit;
 }
 
-function DailyForecast({ days }: DailyForecastProps) {
+function DailyForecast({ days, temperatureUnit }: DailyForecastProps) {
   const weekMin = Math.min(...days.map((d) => d.minTemp));
   const weekMax = Math.max(...days.map((d) => d.maxTemp));
 
@@ -25,19 +29,33 @@ function DailyForecast({ days }: DailyForecastProps) {
 
           return (
             <li key={day.date} className="daily-row">
-              <span className="daily-day">{getDayLabel(day.date, index)}</span>
-              <span className="daily-icon">
-                <span aria-hidden="true">{getWeatherIcon(day.weatherCode, true)}</span>
-                <span className="daily-precip">{chance !== null && chance >= 20 ? `${chance}%` : ""}</span>
+              <span className="daily-day">
+                {getDayLabel(day.date, index)}
               </span>
-              <span className="daily-low">{Math.round(day.minTemp)}°</span>
+
+              <span className="daily-icon">
+                <span aria-hidden="true">
+                  {getWeatherIcon(day.weatherCode, true)}
+                </span>
+                <span className="daily-precip">
+                  {chance !== null && chance >= 20 ? `${chance}%` : ""}
+                </span>
+              </span>
+
+              <span className="daily-low">
+                {formatTemperature(day.minTemp, temperatureUnit)}
+              </span>
+
               <span className="range-track">
                 <span
                   className="range-fill"
                   style={{ left: `${bar.left}%`, width: `${bar.width}%` }}
                 />
               </span>
-              <span className="daily-high">{Math.round(day.maxTemp)}°</span>
+
+              <span className="daily-high">
+                {formatTemperature(day.maxTemp, temperatureUnit)}
+              </span>
             </li>
           );
         })}

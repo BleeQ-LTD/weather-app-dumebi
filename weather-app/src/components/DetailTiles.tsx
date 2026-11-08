@@ -1,5 +1,12 @@
+
 import type { ReactNode } from "react";
-import type { CurrentWeather, DailyWeather, WeatherDetails } from "../weatherService/weatherTypes";
+import type {
+  CurrentWeather,
+  DailyWeather,
+  WeatherDetails,
+} from "../weatherService/weatherTypes";
+import type { TemperatureUnit } from "../firebaseService/profileService";
+import { formatTemperature } from "../weatherService/temperatureUtils";
 import {
   formatTime,
   getCompassDirection,
@@ -12,6 +19,7 @@ interface DetailTilesProps {
   current: CurrentWeather;
   details: WeatherDetails;
   today: DailyWeather | undefined;
+  temperatureUnit: TemperatureUnit;
 }
 
 interface TileProps {
@@ -32,14 +40,19 @@ function Tile({ title, value, children, note }: TileProps) {
   );
 }
 
-function DetailTiles({ current, details, today }: DetailTilesProps) {
+function DetailTiles({
+  current,
+  details,
+  today,
+  temperatureUnit,
+}: DetailTilesProps) {
   const uv = details.uvIndex;
 
   return (
     <div className="tiles">
       <Tile
         title="Feels like"
-        value={`${Math.round(current.feelsLike)}°`}
+        value={formatTemperature(current.feelsLike, temperatureUnit)}
         note={getFeelsLikeDescription(current.feelsLike, current.temperature)}
       />
 
@@ -48,7 +61,10 @@ function DetailTiles({ current, details, today }: DetailTilesProps) {
         value={`${Math.round(current.humidity)}%`}
         note={
           details.dewPoint !== null
-            ? `The dew point is ${Math.round(details.dewPoint)}° right now.`
+            ? `The dew point is ${formatTemperature(
+                details.dewPoint,
+                temperatureUnit,
+              )} right now.`
             : undefined
         }
       />
@@ -57,7 +73,8 @@ function DetailTiles({ current, details, today }: DetailTilesProps) {
         title="Wind"
         value={
           <>
-            {Math.round(current.windSpeed)} <span className="tile-unit">km/h</span>
+            {Math.round(current.windSpeed)}{" "}
+            <span className="tile-unit">km/h</span>
           </>
         }
         note={`Gusts up to ${Math.round(current.windGusts)} km/h`}
@@ -81,7 +98,10 @@ function DetailTiles({ current, details, today }: DetailTilesProps) {
       >
         {uv !== null && (
           <span className="uv-track">
-            <span className="uv-marker" style={{ left: `${Math.min(uv / 11, 1) * 100}%` }} />
+            <span
+              className="uv-marker"
+              style={{ left: `${Math.min(uv / 11, 1) * 100}%` }}
+            />
           </span>
         )}
       </Tile>

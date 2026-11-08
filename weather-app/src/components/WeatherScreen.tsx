@@ -21,6 +21,8 @@ import HourlyForecast from "./HourlyForecast";
 import DailyForecast from "./DailyForecast";
 import DetailTiles from "./DetailTiles";
 import SidebarToggle from "./SidebarToggle";
+import { getLastLocation } from "../locationService/lastLocation";
+import { saveLastLocation } from "../locationService/lastLocation";
 
 interface WeatherScreenProps {
   user: User | null;
@@ -66,8 +68,9 @@ function WeatherScreen({
   }, [user]);
 
   const { status, myLocation, notice } = useCurrentLocation();
-  const [selected, setSelected] = useState<Location | null>(null);
-
+  const [selected, setSelected] = useState<Location | null>(
+    () => getLastLocation()
+  );
   // Desktop: sidebar is expanded by default.
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -78,6 +81,12 @@ function WeatherScreen({
 
   const { forecast, loading, error, refreshFailed } =
     useForecast(location);
+
+  useEffect(() => {
+    if (!location || !forecast || loading || error) return;
+
+    saveLastLocation(location);
+  }, [location, forecast, loading, error]);
 
   const {
     favourites,
@@ -305,12 +314,16 @@ function WeatherScreen({
             />
 
             <div className="details-layout">
-              <DailyForecast days={forecast.daily} />
+              <DailyForecast
+                days={forecast.daily}
+                temperatureUnit={temperatureUnit}
+              />
 
               <DetailTiles
                 current={forecast.current}
                 details={forecast.details}
                 today={forecast.daily[0]}
+                temperatureUnit={temperatureUnit}
               />
             </div>
           </>

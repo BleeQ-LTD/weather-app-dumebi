@@ -91,9 +91,9 @@ export class FavouritesStore {
       });
   }
 
-  async add(location: Location): Promise<void> {
+  async add(location: Location): Promise<boolean> {
     const uid = this.uid;
-    if (!uid) return;
+    if (!uid) return false;
 
     const generation = this.generation;
     const id = makeFavouriteId(location);
@@ -109,17 +109,20 @@ export class FavouritesStore {
       this.update({
         favourites: [saved, ...this.snapshot.favourites.filter((f) => f.id !== id)],
       });
+      return true;
     } catch (err) {
       console.error("Saving favourite failed:", err);
+      
       if (generation === this.generation) {
         this.update({ error: "Could not save this location. Please try again." });
       }
+      return false;
     }
   }
 
-  async remove(id: string): Promise<void> {
-    const uid = this.uid;
-    if (!uid) return;
+async remove(id: string): Promise<boolean> {
+      const uid = this.uid;
+    if (!uid) return false;
 
     const generation = this.generation;
     const operation = this.startOperation(id);
@@ -132,11 +135,13 @@ export class FavouritesStore {
 
       this.localChanges.set(id, { type: "removed" });
       this.update({ favourites: this.snapshot.favourites.filter((f) => f.id !== id) });
+      return true;
     } catch (err) {
       console.error("Removing favourite failed:", err);
       if (generation === this.generation) {
         this.update({ error: "Could not remove this location. Please try again." });
       }
+      return false;
     }
   }
 

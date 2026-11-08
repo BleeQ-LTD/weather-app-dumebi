@@ -1,5 +1,6 @@
+
 import { useEffect, useState } from "react";
-import { getApproximateLocation, locateUser } from "../locationService/geolocationService";
+import { locateUser } from "../locationService/geolocationService";
 import type { Location } from "../locationService/locationTypes";
 
 interface CurrentLocationState {
@@ -19,18 +20,25 @@ export function useCurrentLocation(): CurrentLocationState {
     let cancelled = false;
 
     locateUser((location) => {
-      if (!cancelled) setState({ status: "ready", myLocation: location, notice: "" });
-    }).catch(async (err: unknown) => {
-      const reason = err instanceof Error ? err.message : "Could not get your location.";
-      const approximate = await getApproximateLocation();
+      if (!cancelled) {
+        setState({
+          status: "ready",
+          myLocation: location,
+          notice: "",
+        });
+      }
+    }).catch((err: unknown) => {
       if (cancelled) return;
+
+      const reason =
+        err instanceof Error
+          ? err.message
+          : "Could not get your location.";
 
       setState({
         status: "ready",
-        myLocation: approximate,
-        notice: approximate
-          ? `${reason} Showing your approximate location instead.`
-          : `${reason} Search for a city to see its weather.`,
+        myLocation: null,
+        notice: `${reason} Search for a city to see its weather.`,
       });
     });
 
