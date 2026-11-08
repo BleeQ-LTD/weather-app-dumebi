@@ -103,12 +103,13 @@ export class FavouritesStore {
 
     try {
       const saved = await addFavourite(uid, location);
-      if (!this.isCurrent(generation, id, operation)) return;
+      if (!this.isCurrent(generation, id, operation)) return false;
 
       this.localChanges.set(id, { type: "added", item: saved });
       this.update({
         favourites: [saved, ...this.snapshot.favourites.filter((f) => f.id !== id)],
       });
+
       return true;
     } catch (err) {
       console.error("Saving favourite failed:", err);
@@ -131,10 +132,12 @@ async remove(id: string): Promise<boolean> {
 
     try {
       await removeFavourite(uid, id);
-      if (!this.isCurrent(generation, id, operation)) return;
+      if (!this.isCurrent(generation, id, operation)) return false;
 
       this.localChanges.set(id, { type: "removed" });
-      this.update({ favourites: this.snapshot.favourites.filter((f) => f.id !== id) });
+      this.update({ 
+        favourites: this.snapshot.favourites.filter((f) => f.id !== id) 
+      });
       return true;
     } catch (err) {
       console.error("Removing favourite failed:", err);
