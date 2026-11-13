@@ -1,0 +1,60 @@
+/* ---------- Design tokens ----------
+   One place for the type scale, font weights, accent colours and button
+   measurements. Surfaces, borders and the page background stay where they
+   already are (App.css and index.css), so the existing look is unchanged. */
+
+:root {
+  /* Type: one family, falling back to the system font until it loads */
+  --font-sans: "Inter Variable", system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+  /* Type scale: five steps plus the hero temperature (rem, so browser
+     font-size settings are respected) */
+  --fs-xs: 0.75rem; /* 12px: section labels, small badges */
+  --fs-sm: 0.875rem; /* 14px: secondary text, buttons, form fields */
+  --fs-md: 1rem; /* 16px: body text */
+  --fs-lg: 1.25rem; /* 20px: condition summary */
+  --fs-xl: 2rem; /* 32px: city name, detail tile values */
+  --fs-hero: 6.5rem; /* 104px: the big temperature */
+
+  /* Weights */
+  --fw-hero: 400;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+
+  /* Spacing between the letters of the small uppercase labels */
+  --tracking-label: 0.06em;
+
+  /* Accent colour.
+     --accent (in App.css) stays for focus rings and decoration.
+     White text on --accent is only 4.1:1, below the 4.5:1 needed for
+     14px text, so filled buttons use --accent-strong (5.0:1). */
+  --accent-strong: #545cf0;
+  --accent-strong-hover: #4a51e0;
+  --on-accent: #ffffff;
+
+  /* Accent used as text colour: 7.5:1 on the dark page and 4.8:1 on the
+     highlighted "Now" hour, which is the lowest-contrast place it appears */
+  --accent-text: #a8adff;
+
+  /* Buttons */
+  --btn-min-height: 2.75rem; /* 44px touch target */
+  --btn-pad-x: 1rem;
+  --btn-radius: 10px;
+  --btn-gap: 0.5rem; /* between icon and label */
+  --btn-font-size: var(--fs-sm);
+  --btn-font-weight: var(--fw-semibold);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    /* Same checks on the light theme: 6.6:1 on white, 5.0:1 on the "Now" hour */
+    --accent-text: #4349d6;
+  }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --fs-hero: 5.25rem; /* 84px on phones */
+  }
+}

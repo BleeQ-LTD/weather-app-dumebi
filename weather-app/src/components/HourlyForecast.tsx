@@ -41,7 +41,6 @@ function HourlyForecast({
       <ul className="hourly" ref={listRef}>
         {hours.map((hour) => {
           const isNow = isCurrentHour(hour.time, currentTime);
-          const chance = hour.precipitationProbability;
 
           return (
             <li
@@ -55,10 +54,6 @@ function HourlyForecast({
 
               <span className="hour-icon" aria-hidden="true">
                 {getWeatherIcon(hour.weatherCode, hour.isDay)}
-              </span>
-
-              <span className="hour-precip">
-                {chance !== null && chance >= 20 ? `${chance}%` : ""}
               </span>
 
               <span className="hour-temp">

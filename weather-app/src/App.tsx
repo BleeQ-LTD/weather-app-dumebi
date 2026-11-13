@@ -14,7 +14,9 @@ import ProfileGate from "./components/ProfileGate";
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
-  const [guest, setGuest] = useState(false);
+  // Visitors land on the forecast in guest mode; the sign-in screen only
+  // opens when they ask for it (sidebar button, Save, etc.).
+  const [signInOpen, setSignInOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
   const [emailLinkMode, setEmailLinkMode] = useState(() =>
@@ -32,9 +34,11 @@ function App() {
       setUser(currentUser);
       setAuthReady(true);
 
-      if (!currentUser) {
+      if (currentUser) {
+        // Signed in: close the sign-in screen and go straight to the weather.
+        setSignInOpen(false);
+      } else {
         setProfileOpen(false);
-        setGuest(false);
       }
     });
   }, []);
@@ -74,7 +78,7 @@ function App() {
           <WeatherScreen
             key={user.uid}
             user={user}
-            onRequestSignIn={() => setGuest(false)}
+            onRequestSignIn={() => setSignInOpen(true)}
             onOpenProfile={() => setProfileOpen(true)}
           />
         )}
@@ -82,17 +86,17 @@ function App() {
     );
   }
 
-  if (guest) {
-    return (
-      <WeatherScreen
-        key="guest"
-        user={null}
-        onRequestSignIn={() => setGuest(false)}
-      />
-    );
+  if (signInOpen) {
+    return <AuthGate onContinueAsGuest={() => setSignInOpen(false)} />;
   }
 
-  return <AuthGate onContinueAsGuest={() => setGuest(true)} />;
+  return (
+    <WeatherScreen
+      key="guest"
+      user={null}
+      onRequestSignIn={() => setSignInOpen(true)}
+    />
+  );
 }
 
 export default App;

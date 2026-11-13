@@ -4,8 +4,6 @@ import type { User } from "firebase/auth";
 import {
   GENDER_OPTIONS,
   getUserProfile,
-  saveTemperatureUnit,
-  type TemperatureUnit,
   type UserProfile,
 } from "../firebaseService/profileService";
 import { logOut } from "../firebaseService/authService";
@@ -22,9 +20,7 @@ export default function ProfilePage({
 }: ProfilePageProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [savingUnit, setSavingUnit] = useState(false);
   const [error, setError] = useState("");
-  const [unitMessage, setUnitMessage] = useState("");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   useEffect(() => {
@@ -56,27 +52,6 @@ export default function ProfilePage({
       active = false;
     };
   }, [user.uid]);
-
-  async function handleUnitChange(unit: TemperatureUnit) {
-    setError("");
-    setUnitMessage("");
-    setSavingUnit(true);
-
-    try {
-      await saveTemperatureUnit(user.uid, unit);
-
-      setProfile((previous) =>
-        previous ? { ...previous, temperatureUnit: unit } : previous,
-      );
-
-      setUnitMessage("Temperature preference saved.");
-    } catch (err) {
-      console.error("Unable to save temperature preference:", err);
-      setError("Unable to save your temperature preference.");
-    } finally {
-      setSavingUnit(false);
-    }
-  }
 
   async function handleSignOut() {
     try {
@@ -153,36 +128,6 @@ export default function ProfilePage({
                 />
               </div>
 
-              <div className="field">
-                <label htmlFor="temperature-unit">
-                  Temperature preference
-                </label>
-
-                <select
-                  id="temperature-unit"
-                  value={profile?.temperatureUnit || "celsius"}
-                  onChange={(event) =>
-                    handleUnitChange(
-                      event.target.value as TemperatureUnit,
-                    )
-                  }
-                  disabled={savingUnit || !profile}
-                >
-                  <option value="celsius">Celsius (°C)</option>
-                  <option value="fahrenheit">Fahrenheit (°F)</option>
-                </select>
-
-                {savingUnit && (
-                  <span className="muted small">Saving preference...</span>
-                )}
-
-                {unitMessage && (
-                  <span className="success-text" role="status">
-                    {unitMessage}
-                  </span>
-                )}
-              </div>
-
               {error && (
                 <p className="error-text" role="alert">
                   {error}
@@ -199,7 +144,7 @@ export default function ProfilePage({
 
               <button
                 type="button"
-                className="btn btn-ghost"
+                className="btn btn-secondary"
                 onClick={handleSignOut}
               >
                 Sign out

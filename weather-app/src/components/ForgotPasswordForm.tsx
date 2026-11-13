@@ -61,7 +61,7 @@ export default function ForgotPasswordForm({ onBack }: Props) {
                 Return to sign in
               </button>
               <button
-                className="btn btn-ghost"
+                className="btn btn-secondary"
                 type="button"
                 onClick={() => setMessage("")}
               >
@@ -95,7 +95,7 @@ export default function ForgotPasswordForm({ onBack }: Props) {
                 {loading ? "Sending reset link…" : "Send reset link"}
               </button>
               <button
-                className="btn btn-ghost"
+                className="btn btn-secondary"
                 type="button"
                 onClick={onBack}
               >

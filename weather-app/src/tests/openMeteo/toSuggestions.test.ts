@@ -47,10 +47,10 @@ describe("toSuggestions", () => {
     expect(result.map((r) => r.label)).toEqual(["London, United Kingdom", "London, Canada"]);
   });
 
-  it("returns at most 6 suggestions", () => {
+  it("returns at most 8 suggestions", () => {
     const many = Array.from({ length: 10 }, (_, i) =>
       make({ id: i, name: `Town${i}`, latitude: 5 + i, longitude: 5 + i })
     );
-    expect(toSuggestions(many)).toHaveLength(6);
+    expect(toSuggestions(many)).toHaveLength(8);
   });
 });

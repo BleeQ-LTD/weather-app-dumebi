@@ -82,7 +82,7 @@ function ResetPasswordPage({ code, onDone }: ResetPasswordPageProps) {
         <p className={phase.name === "invalid" ? "error-text" : undefined} role="status">
           {phase.message}
         </p>
-        <button type="button" className="btn" onClick={onDone}>
+        <button type="button" className="btn btn-primary" onClick={onDone}>
           Go to sign in
         </button>
       </div>
@@ -120,7 +120,7 @@ function ResetPasswordPage({ code, onDone }: ResetPasswordPageProps) {
         </p>
       )}
 
-      <button type="submit" className="btn" disabled={busy}>
+      <button type="submit" className="btn btn-primary" disabled={busy}>
         {busy ? "Saving..." : "Save new password"}
       </button>
     </form>

@@ -5,10 +5,13 @@ export interface Location {
   countryCode?: string; // ISO code such as "NG"; the same in every service
 }
 
+export type PlaceKind = "city" | "state" | "country";
+
 export interface PlaceSuggestion {
   id: number;
   label: string;
   location: Location;
+  kind?: PlaceKind; // shown as a small tag for states and countries
 }
 
 export interface GeocodingResult {

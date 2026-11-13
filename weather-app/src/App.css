@@ -53,18 +53,6 @@ body,
   width: 100%;
 }
 
-.sidebar {
-  position: relative;
-  flex: 0 0 320px;
-  width: 320px;
-  transition: width 0.25s ease;
-}
-
-.sidebar.collapsed {
-  flex-basis: 64px;
-  width: 64px;
-}
-
 .weather-main {
   flex: 1;
   min-width: 0;
@@ -76,12 +64,12 @@ body,
 }
 
 .small {
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .error-text {
   color: var(--danger);
-  font-size: 14px;
+  font-size: var(--fs-sm);
 }
 
 .status {
@@ -95,14 +83,21 @@ body,
   border-radius: 12px;
   background: var(--surface);
   border: 1px solid var(--border);
-  font-size: 14px;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
 .btn {
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--btn-gap);
+  min-height: var(--btn-min-height);
+  padding: 0 var(--btn-pad-x);
+  border-radius: var(--btn-radius);
+  font-size: var(--btn-font-size);
+  font-weight: var(--btn-font-weight);
+  line-height: 1.2;
 }
 
 .btn:disabled {
@@ -111,17 +106,40 @@ body,
 }
 
 .btn-primary {
-  background: var(--accent);
-  color: #fff;
+  background: var(--accent-strong);
+  color: var(--on-accent);
 }
 
-.btn-ghost {
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-strong-hover);
+}
+
+/* Secondary: outlined. The default for everything that is not the main action. */
+.btn-secondary {
   background: var(--surface);
   border: 1px solid var(--border);
 }
 
-.btn-ghost:hover {
+.btn-secondary:hover:not(:disabled) {
   background: var(--surface-strong);
+}
+
+/* Ghost: no outline, for low-emphasis actions. */
+.btn-ghost {
+  background: transparent;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface);
+}
+
+/* Star in the Save button: outlined when not saved, filled and tinted when saved */
+.star-icon {
+  flex: none;
+}
+
+.star-icon-filled {
+  color: var(--accent-text);
 }
 
 input {
@@ -162,8 +180,8 @@ input {
 }
 
 .auth-brand h1 {
-  font-size: 28px;
-  font-weight: 600;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-semibold);
 }
 
 .auth-tabs {
@@ -178,7 +196,7 @@ input {
 .auth-tab {
   padding: 8px;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--muted);
 }
 
@@ -197,7 +215,7 @@ input {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 14px;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -218,68 +236,6 @@ input {
   min-height: 100vh;
   margin: 0 auto;
   padding: 72px 24px 24px;
-  /* top room for the floating button */
-}
-
-/* Floating sidebar button: always visible, including on phones */
-.icon-button {
-  display: inline-grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background-color: var(--page-bg);
-  background-image: linear-gradient(var(--surface-strong), var(--surface-strong));
-}
-
-.icon-button.floating {
-  position: fixed;
-  top: max(16px, env(safe-area-inset-top));
-  left: max(16px, env(safe-area-inset-left));
-  z-index: 30;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-
-/* Sidebar as an overlay that slides over the page */
-.backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.sidebar {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 25;
-  width: min(320px, 85vw);
-  padding: 76px 16px 16px;
-  /* clears the floating button */
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  background-color: var(--page-bg);
-  background-image: linear-gradient(var(--surface), var(--surface));
-  border-right: 1px solid var(--border);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
-  transform: translateX(-100%);
-  visibility: hidden;
-  /* also removes the hidden links and buttons from the tab order */
-  transition: transform 0.25s ease, visibility 0s linear 0.25s;
-}
-
-.sidebar.open {
-  transform: translateX(0);
-  visibility: visible;
-  transition: transform 0.25s ease, visibility 0s;
-}
-
-.sidebar .sidebar-footer {
-  margin-top: auto;
 }
 
 .main {
@@ -312,92 +268,24 @@ input {
   width: 100%;
   padding: 10px 12px;
   text-align: left;
-  font-size: 14px;
+  font-size: var(--fs-sm);
+}
+
+.search-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.search-result-tag {
+  flex: none;
+  font-size: var(--fs-xs);
+  color: var(--muted);
 }
 
 .search-result:hover {
   background: var(--surface-strong);
-}
-
-.sidebar-title {
-  margin-bottom: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.location-row {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  text-align: left;
-}
-
-.location-row:hover,
-.location-row.active {
-  background: var(--surface-strong);
-}
-
-.favourites {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.favourite {
-  display: flex;
-  align-items: center;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.favourite:hover,
-.favourite.active {
-  background: var(--surface-strong);
-}
-
-.favourite-name {
-  flex: 1;
-  min-width: 0;
-  padding: 12px 14px;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.favourite-remove {
-  padding: 8px 14px;
-  font-size: 20px;
-  line-height: 1;
-  color: var(--muted);
-}
-
-.favourite-remove:hover {
-  color: var(--danger);
-}
-
-.sidebar-footer span {
-  overflow-wrap: anywhere;
-}
-
-.sidebar-footer {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 8px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
 }
 
 /* ---------- Current conditions ---------- */
@@ -411,30 +299,44 @@ input {
 }
 
 .current-label {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--muted);
 }
 
 .current-name {
-  font-size: 32px;
-  font-weight: 500;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-medium);
 }
 
 .current-temp {
-  font-size: 96px;
-  font-weight: 200;
-  line-height: 1.05;
+  font-size: var(--fs-hero);
+  font-weight: var(--fw-hero);
+  line-height: 1;
+  /* Large display type needs tighter tracking, otherwise the digits and the
+     degree sign drift apart. Lining, proportional figures keep "29" even. */
+  letter-spacing: -0.045em;
+  font-variant-numeric: lining-nums proportional-nums;
+  font-feature-settings: "tnum" 0, "case" 1;
+  /* Optical centring: tracking adds space after the last glyph */
+  padding-left: 0.045em;
 }
 
 .current-condition {
-  font-size: 20px;
+  font-size: var(--fs-lg);
 }
 
 .current-range {
   color: var(--muted);
+}
+
+.current-rain {
+  margin-top: 4px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--accent-text);
 }
 
 .current .btn {
@@ -451,9 +353,9 @@ input {
 
 .panel-title {
   margin-bottom: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -483,13 +385,13 @@ input {
 }
 
 .hour-label {
-  font-size: 14px;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
 .hour.current .hour-label {
   color: inherit;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .hour-icon {
@@ -500,14 +402,14 @@ input {
 .hour-precip,
 .daily-precip {
   min-height: 1.2em;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--accent-text);
 }
 
 .hour-temp {
-  font-size: 17px;
-  font-weight: 500;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
 }
 
 /* ---------- 10-day forecast ---------- */
@@ -525,7 +427,7 @@ input {
 }
 
 .daily-day {
-  font-weight: 500;
+  font-weight: var(--fw-medium);
 }
 
 .daily-icon {
@@ -542,7 +444,7 @@ input {
 
 .daily-high {
   text-align: right;
-  font-weight: 500;
+  font-weight: var(--fw-medium);
 }
 
 .range-track {
@@ -586,39 +488,39 @@ input {
 }
 
 .tile-title {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--muted);
 }
 
 .tile-value {
-  font-size: 32px;
-  font-weight: 500;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-medium);
   line-height: 1.15;
 }
 
 .tile-unit {
-  font-size: 14px;
-  font-weight: 400;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-regular);
   color: var(--muted);
 }
 
 .tile-note {
   margin-top: auto;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
 .wind-direction {
-  font-size: 14px;
+  font-size: var(--fs-sm);
 }
 
 .wind-arrow {
   display: inline-block;
   color: var(--accent);
-  font-weight: 700;
+  font-weight: var(--fw-semibold);
 }
 
 .uv-track {
@@ -645,7 +547,7 @@ input {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -662,20 +564,6 @@ input {
   flex-direction: column;
   gap: 8px;
   text-align: center;
-}
-
-.guest-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.guest-card .sidebar-title {
-  margin-bottom: 0;
 }
 
 .update-banner {
@@ -731,8 +619,8 @@ input {
   height: auto;
   border-radius: 0;
   color: #a8a8a8;
-  font-size: 14px;
-  font-weight: 400;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-regular);
   white-space: nowrap;
   cursor: pointer;
   transition: color 0.2s ease;
@@ -760,7 +648,7 @@ input {
   background: transparent;
   color: #aaa;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   cursor: pointer;
 }
 
@@ -786,7 +674,7 @@ input {
 
 .success-text {
   color: var(--success-color, #15803d);
-  font-size: 0.95rem;
+  font-size: var(--fs-sm);
   line-height: 1.5;
   padding: 12px;
   border-radius: 10px;
@@ -821,7 +709,7 @@ input {
 .saved-email-heading {
   margin: 4px 8px 6px;
   color: #6b7280;
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .saved-email-row {
@@ -867,7 +755,7 @@ input {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: var(--fs-sm);
   cursor: pointer;
 }
 
@@ -901,7 +789,7 @@ input {
 
 .saved-email-heading {
   margin: 4px 8px 6px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   opacity: 0.7;
 }
 
@@ -946,7 +834,7 @@ input {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: var(--fs-sm);
   cursor: pointer;
 }
 
@@ -1031,11 +919,6 @@ button:disabled {
   .hour.current {
     animation: none;
   }
-
-  .sidebar,
-  .sidebar.open {
-    transition: none;
-  }
 }
 
 /* ---------- Wide screens: 10-day forecast beside the tiles ---------- */
@@ -1046,13 +929,26 @@ button:disabled {
 }
 
 /* ---------- Phone-width screens ---------- */
-@media (max-width: 560px) {
+@media (max-width: 768px) {
   .app {
-    padding: 68px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
 
-  .current-temp {
-    font-size: 80px;
+  /* The content column scrolls; the bottom bar stays put */
+  .app .main {
+    flex: 1 1 0;
+    min-height: 0;
+    padding: 16px 16px calc(var(--btn-min-height) + 48px + env(safe-area-inset-bottom, 0px));
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 }
 
@@ -1157,63 +1053,8 @@ button:disabled {
     min-height: 0;
     margin: 0;
     padding: 0;
-    /* the base .app reserves room for the floating button */
 
     overflow: hidden;
-  }
-
-  /* Sidebar */
-  .app .sidebar {
-    display: flex !important;
-    flex-direction: column;
-    align-items: stretch;
-
-    position: relative !important;
-    inset: auto !important;
-    transform: none !important;
-
-    flex: 0 0 280px;
-    width: 280px;
-
-    height: 100%;
-    min-height: 0;
-    box-sizing: border-box;
-
-    padding: 56px 10px 16px;
-
-    overflow-x: hidden;
-    overflow-y: auto;
-
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-
-    transition: width 0.25s ease, flex-basis 0.25s ease;
-  }
-
-  /* Keep sidebar content visible */
-  .app .sidebar>* {
-    flex-shrink: 0;
-  }
-
-  /* Keep account controls at the bottom when space allows */
-  .app .sidebar .sidebar-footer {
-    margin-top: auto;
-    padding-top: 20px;
-    flex-shrink: 0;
-  }
-
-  /* Collapsed sidebar */
-  .app.sidebar-collapsed .sidebar {
-    flex: 0 0 64px;
-    width: 64px;
-    padding: 56px 0 16px;
-    overflow: hidden;
-  }
-
-  .app.sidebar-collapsed .sidebar>*:not(.sidebar-toggle) {
-    visibility: hidden;
-    pointer-events: none;
   }
 
   /* Main content: a scrolling column with space between the panels */
@@ -1246,31 +1087,198 @@ button:disabled {
     margin-inline: auto;
   }
 
-  /* Sidebar toggle button - always visible */
-  .app .icon-button.floating {
-    position: fixed !important;
-    top: 12px;
-    left: 12px;
-    z-index: 1000;
-
-    display: inline-grid;
-    place-items: center;
-
-    width: 40px;
-    height: 40px;
-
-    cursor: pointer;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
-
-  .app .backdrop {
-    display: none !important;
-  }
-
   /* Slimmer scrollbar under the hourly forecast */
   .hourly {
     scrollbar-width: thin;
+  }
+}
+
+/* ---------- Tabular numerals ----------
+   Every digit gets the same width, so temperatures line up in the hourly
+   strip and the 10-day rows and do not jitter when values change. */
+.current-temp,
+.current-range,
+.hour-temp,
+.hour-label,
+.hour-precip,
+.daily-precip,
+.daily-low,
+.daily-high,
+.tile-value,
+.tile-unit,
+.tile-note {
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* ---------- Weather-driven background ----------
+   SkyBackground renders one fixed layer per theme; only the active one is
+   visible, so a change of city or weather cross-fades. Each gradient is
+   oversized and drifts slowly so the sky feels alive. */
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.sky-layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background-size: 200% 200%;
+  transition: opacity 1.2s ease;
+  animation: sky-drift 24s ease-in-out infinite alternate;
+}
+
+.sky-layer.is-active {
+  opacity: 1;
+}
+
+@keyframes sky-drift {
+  from {
+    background-position: 0% 0%;
+  }
+  to {
+    background-position: 100% 100%;
+  }
+}
+
+/* Dark theme (default) */
+.sky-clear-day {
+  background-image: linear-gradient(160deg, #1d4f91 0%, #2f74c0 45%, #3a8ad6 70%, #1b3d6e 100%);
+}
+.sky-clear-night {
+  background-image: linear-gradient(160deg, #0b1026 0%, #1b1f4a 45%, #2b2d6e 70%, #0d1330 100%);
+}
+.sky-cloudy-day {
+  background-image: linear-gradient(160deg, #3b4a5c 0%, #56677c 45%, #6b7d92 70%, #36424f 100%);
+}
+.sky-cloudy-night {
+  background-image: linear-gradient(160deg, #15191f 0%, #262d38 45%, #343d4b 70%, #191d24 100%);
+}
+.sky-rain-day {
+  background-image: linear-gradient(160deg, #26394d 0%, #34526e 45%, #476a88 70%, #22303f 100%);
+}
+.sky-rain-night {
+  background-image: linear-gradient(160deg, #0d151f 0%, #18283a 45%, #223a52 70%, #0f1823 100%);
+}
+.sky-storm {
+  background-image: linear-gradient(160deg, #15121f 0%, #2a2340 45%, #3d3359 70%, #17131f 100%);
+}
+.sky-snow {
+  background-image: linear-gradient(160deg, #3a4d63 0%, #5d7590 45%, #7f98b2 70%, #3e5068 100%);
+}
+.sky-fog {
+  background-image: linear-gradient(160deg, #3a3e44 0%, #555b62 45%, #6c7279 70%, #3c4046 100%);
+}
+
+/* Light theme: same moods, brighter skies for dark text */
+@media (prefers-color-scheme: light) {
+  .sky-clear-day {
+    background-image: linear-gradient(160deg, #8ec5ff 0%, #b9dcff 45%, #e3f1ff 70%, #9fcdfa 100%);
+  }
+  .sky-clear-night {
+    background-image: linear-gradient(160deg, #b8bde8 0%, #cfd2f2 45%, #e4e5f8 70%, #b3b8e0 100%);
+  }
+  .sky-cloudy-day {
+    background-image: linear-gradient(160deg, #c9d3de 0%, #dbe2ea 45%, #eef2f6 70%, #c3ccd7 100%);
+  }
+  .sky-cloudy-night {
+    background-image: linear-gradient(160deg, #b9c0ca 0%, #cdd3db 45%, #e0e4e9 70%, #b5bcc6 100%);
+  }
+  .sky-rain-day {
+    background-image: linear-gradient(160deg, #a9bccf 0%, #c3d2e0 45%, #dde6ee 70%, #a6b8ca 100%);
+  }
+  .sky-rain-night {
+    background-image: linear-gradient(160deg, #9fadbe 0%, #b8c4d2 45%, #d1d9e2 70%, #9caabb 100%);
+  }
+  .sky-storm {
+    background-image: linear-gradient(160deg, #aaa3c2 0%, #c2bcd6 45%, #dcd8e8 70%, #a69fbe 100%);
+  }
+  .sky-snow {
+    background-image: linear-gradient(160deg, #dbe7f3 0%, #eaf1f8 45%, #f7fafd 70%, #d6e2ee 100%);
+  }
+  .sky-fog {
+    background-image: linear-gradient(160deg, #d3d5d8 0%, #e1e3e5 45%, #eeeff0 70%, #cfd1d4 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-layer {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Let the sky show through the navigation.
+   The sidebar must NOT get a backdrop-filter: that turns it into the
+   containing block for its position: fixed flyouts (profile, favourites,
+   units), which then get clipped inside the collapsed 64px rail. */
+.app .sidebar {
+  background-color: color-mix(in srgb, var(--page-bg) 70%, transparent);
+}
+
+.app .bottom-bar {
+  background-color: color-mix(in srgb, var(--page-bg) 55%, transparent);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+/* ---------- Readability on the sky gradient ----------
+   The gradients are brighter than the old flat background, so the search
+   field, the rain chance and the saved star get their own stronger colours
+   on the weather screen. */
+.app {
+  --sky-accent: #7b82ff; /* deeper, more saturated violet */
+  --sky-field-bg: rgba(10, 14, 28, 0.38);
+  --sky-field-border: rgba(255, 255, 255, 0.22);
+  --sky-placeholder: rgba(255, 255, 255, 0.78);
+}
+
+.app .search-input {
+  background: var(--sky-field-bg);
+  border-color: var(--sky-field-border);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.app .search-input::placeholder {
+  color: var(--sky-placeholder);
+  opacity: 1;
+}
+
+.app .search-results {
+  background: rgba(10, 14, 28, 0.55);
+  border-color: var(--sky-field-border);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.app .current-rain {
+  color: var(--sky-accent);
+  font-weight: var(--fw-semibold);
+}
+
+.app .current .btn-secondary {
+  background: var(--sky-field-bg);
+  border-color: var(--sky-field-border);
+}
+
+.app .star-icon-filled {
+  color: var(--sky-accent);
+}
+
+@media (prefers-color-scheme: light) {
+  .app {
+    --sky-accent: #3d43c9;
+    --sky-field-bg: rgba(255, 255, 255, 0.55);
+    --sky-field-border: rgba(20, 30, 60, 0.18);
+    --sky-placeholder: rgba(20, 30, 60, 0.7);
+  }
+
+  .app .search-results {
+    background: rgba(255, 255, 255, 0.6);
   }
 }

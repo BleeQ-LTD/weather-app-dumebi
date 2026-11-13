@@ -22,6 +22,7 @@ const lagosResult = {
   longitude: 3.39583,
   admin1: "Lagos",
   country: "Nigeria",
+  population: 9000000,
 };
 
 afterEach(() => {
@@ -70,7 +71,7 @@ describe("TC-OM-003 geocoding API", () => {
   it("leaves the region out and shows City, Country", async () => {
     mockFetch({
       results: [
-        { id: 1, name: "Paris", latitude: 48.85, longitude: 2.35, admin1: "Île-de-France", country: "France" },
+        { id: 1, name: "Paris", latitude: 48.85, longitude: 2.35, admin1: "Île-de-France", country: "France", population: 2_100_000 },
       ],
     });
 
@@ -80,7 +81,7 @@ describe("TC-OM-003 geocoding API", () => {
   });
 
   it("copes with missing region and country", async () => {
-    mockFetch({ results: [{ id: 9, name: "Atlantis", latitude: 1, longitude: 2 }] });
+    mockFetch({ results: [{ id: 9, name: "Atlantis", latitude: 1, longitude: 2, population: 200_000 }] });
 
     const [place] = await searchPlaces("Atlantis");
 
@@ -90,15 +91,16 @@ describe("TC-OM-003 geocoding API", () => {
   it("shows one suggestion per city and country when several records match", async () => {
     mockFetch({
       results: [
-        { id: 1, name: "Springfield", latitude: 39.8, longitude: -89.6, admin1: "Illinois", country: "United States" },
-        { id: 2, name: "Springfield", latitude: 37.2, longitude: -93.3, admin1: "Missouri", country: "United States" },
-        { id: 3, name: "Springfield", latitude: 42.1, longitude: -72.6, admin1: "Massachusetts", country: "United States" },
+        { id: 1, name: "Springfield", latitude: 39.8, longitude: -89.6, admin1: "Illinois", country: "United States", population: 114_000 },
+        { id: 2, name: "Springfield", latitude: 37.2, longitude: -93.3, admin1: "Missouri", country: "United States", population: 169_000 },
+        { id: 3, name: "Springfield", latitude: 42.1, longitude: -72.6, admin1: "Massachusetts", country: "United States", population: 155_000 },
       ],
     });
 
     const places = await searchPlaces("Springfield");
 
-    expect(places.map((p) => p.id)).toEqual([1]);
+    // Biggest first (Missouri), one per city and country
+    expect(places.map((p) => p.id)).toEqual([2]);
     expect(places.map((p) => p.label)).toEqual(["Springfield, United States"]);
   });
 });
@@ -155,5 +157,23 @@ describe("TC-OM-007 geocoding API failure", () => {
     const places = await searchPlaces("Lagos").catch(() => []);
 
     expect(places.filter((place) => place.label !== "")).toEqual([]);
+  });
+});
+
+describe("TC-OM-003b search hides places that aren't real towns", () => {
+  it("keeps cities of 100,000+ and states, drops smaller towns", async () => {
+    mockFetch({
+      results: [
+        { ...lagosResult, id: 1, population: 15000000, feature_code: "PPLA", country_code: "NG" },
+        { id: 2, name: "Lagos", latitude: 43.2, longitude: -0.2, country: "France", country_code: "FR", feature_code: "PPL", population: 0 },
+        { id: 3, name: "Lagos", latitude: 37.1, longitude: -8.67, country: "Portugal", country_code: "PT", feature_code: "PPLA3", population: 31049 },
+        { id: 5, name: "Lagos", latitude: 6.6, longitude: 3.34, country: "Nigeria", country_code: "NG", feature_code: "ADM1" },
+        { id: 4, name: "Lagós", latitude: 41.0, longitude: 25.0, country: "Greece", country_code: "GR", feature_code: "PPL", population: 120 },
+      ],
+    });
+
+    const places = await searchPlaces("Lagos");
+
+    expect(places.map((p) => [p.id, p.kind])).toEqual([[1, "city"], [5, "state"]]);
   });
 });

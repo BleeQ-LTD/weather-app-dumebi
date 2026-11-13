@@ -5,22 +5,31 @@ import {
   isSamePlace,
   makeFavouriteId,
 } from "../firebaseService/favouriteId";
+import { logOut } from "../firebaseService/authService";
 import {
   getUserProfile,
+  saveTemperatureUnit,
   type TemperatureUnit,
 } from "../firebaseService/profileService";
 import type { Location } from "../locationService/locationTypes";
 import { useCurrentLocation } from "../hooks/useCurrentLocation";
 import { useFavourites } from "../hooks/useFavourites";
 import { useForecast } from "../hooks/useForecast";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import {
+  getStoredTemperatureUnit,
+  storeTemperatureUnit,
+} from "../utils/unitPreference";
 import LocationSearch from "./LocationSearch";
-import FavouriteLocations from "./FavouriteLocations";
-import GuestInfo from "./GuestInfo";
+import BottomBar from "./BottomBar";
+import Sidebar from "./Sidebar";
+import type { AppNavProps } from "./navTypes";
 import CurrentConditions from "./CurrentConditions";
 import HourlyForecast from "./HourlyForecast";
 import DailyForecast from "./DailyForecast";
 import DetailTiles from "./DetailTiles";
-import SidebarToggle from "./SidebarToggle";
+import SkyBackground from "./SkyBackground";
+import { getRainChance, getSkyTheme } from "../weatherService/weatherUtils";
 import { getLastLocation } from "../locationService/lastLocation";
 import { saveLastLocation } from "../locationService/lastLocation";
 
@@ -37,15 +46,17 @@ function WeatherScreen({
 }: WeatherScreenProps) {
   const isGuest = user === null;
 
-  const [temperatureUnit, setTemperatureUnit] =
-    useState<TemperatureUnit>("celsius");
+  const [temperatureUnit, setTemperatureUnit] = useState<TemperatureUnit>(
+    () => getStoredTemperatureUnit()
+  );
+  const [unitError, setUnitError] = useState("");
 
   useEffect(() => {
     let active = true;
 
     async function loadTemperaturePreference() {
       if (!user) {
-        setTemperatureUnit("celsius");
+        setTemperatureUnit(getStoredTemperatureUnit());
         return;
       }
 
@@ -74,8 +85,8 @@ function WeatherScreen({
   // Desktop: sidebar is expanded by default.
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Mobile: drawer is closed by default.
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  // Wide screens get the sidebar, phones get the bottom bar.
+  const isDesktop = useMediaQuery("(min-width: 769px)");
 
   const location = selected ?? myLocation;
 
@@ -110,47 +121,31 @@ function WeatherScreen({
     myLocation && location && isSamePlace(myLocation, location)
   );
 
-  // Handle Escape and prevent background scrolling
-  // while the mobile sidebar is open.
-  useEffect(() => {
-    if (!mobileSidebarOpen) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setMobileSidebarOpen(false);
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [mobileSidebarOpen]);
-
-  // Desktop minimizes the sidebar.
-  // Mobile opens and closes the drawer.
-  function handleSidebarToggle() {
-    const isDesktop = window.matchMedia(
-      "(min-width: 769px)"
-    ).matches;
-
-    if (isDesktop) {
-      setSidebarCollapsed((collapsed) => !collapsed);
-    } else {
-      setMobileSidebarOpen((open) => !open);
-    }
-  }
-
   function handleSelect(next: Location) {
     setSelected(next);
+  }
 
-    // Close the drawer only on mobile.
-    setMobileSidebarOpen(false);
+  // Signed-in users keep the unit in their profile, Guests on this device.
+  // The screen updates straight away and goes back if saving fails.
+  async function handleChangeUnit(next: TemperatureUnit) {
+    if (next === temperatureUnit) return;
+
+    const previous = temperatureUnit;
+    setTemperatureUnit(next);
+    setUnitError("");
+
+    if (!user) {
+      storeTemperatureUnit(next);
+      return;
+    }
+
+    try {
+      await saveTemperatureUnit(user.uid, next);
+    } catch (error) {
+      console.error("Unable to save temperature unit:", error);
+      setTemperatureUnit(previous);
+      setUnitError("Couldn't save your choice. Please try again.");
+    }
   }
 
   function handleToggleFavourite() {
@@ -168,86 +163,42 @@ function WeatherScreen({
   const appClassName = [
     "app",
     sidebarCollapsed ? "sidebar-collapsed" : "sidebar-expanded",
-    mobileSidebarOpen ? "mobile-sidebar-open" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  ].join(" ");
+
+  const navProps: AppNavProps = {
+    user,
+    myLocation,
+    isMyLocationActive: isMyLocation,
+    favourites,
+    favouritesError,
+    activeFavouriteId: currentId,
+    temperatureUnit,
+    unitError,
+    onChangeUnit: handleChangeUnit,
+    onSelect: handleSelect,
+    onRemoveFavourite: remove,
+    onRequestSignIn,
+    onOpenProfile,
+    onSignOut: logOut,
+  };
 
   return (
     <div className={appClassName}>
-      <SidebarToggle
-        open={!sidebarCollapsed}
-        onToggle={handleSidebarToggle}
+      <SkyBackground
+        theme={
+          forecast && !loading && !error
+            ? getSkyTheme(forecast.current.weatherCode, forecast.current.isDay)
+            : null
+        }
       />
 
-      {mobileSidebarOpen && (
-        <div
-          className="backdrop"
-          onClick={() => setMobileSidebarOpen(false)}
-          aria-hidden="true"
+      {isDesktop && (
+        <Sidebar
+          {...navProps}
+          collapsed={sidebarCollapsed}
+          onToggleCollapsed={() => setSidebarCollapsed((collapsed) => !collapsed)}
         />
       )}
-
-      {/* Sidebar */}
-      <aside
-        className={`sidebar ${mobileSidebarOpen ? "open" : ""
-          } ${sidebarCollapsed ? "collapsed" : ""}`}
-        aria-label="Locations and account"
-      >
-        {myLocation && (
-          <button
-            type="button"
-            className={
-              isMyLocation
-                ? "location-row active"
-                : "location-row"
-            }
-            onClick={() => handleSelect(myLocation)}
-          >
-            <span>📍 My Location</span>
-            <span className="muted small">
-              {myLocation.name}
-            </span>
-          </button>
-        )}
-
-        {isGuest ? (
-          <GuestInfo onRequestSignIn={onRequestSignIn} />
-        ) : (
-          <>
-            <FavouriteLocations
-              favourites={favourites}
-              activeId={currentId}
-              onSelect={handleSelect}
-              onRemove={remove}
-            />
-
-            {favouritesError && (
-              <p className="error-text">
-                {favouritesError}
-              </p>
-            )}
-          </>
-        )}
-
-        <div className="sidebar-footer">
-          {user ? (
-            <>
-              <span className="muted small">{user.email}</span>
-
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={onOpenProfile}
-              >
-                Profile
-              </button>
-            </>
-          ) : (
-            <span className="muted small">Browsing as a guest</span>
-          )}
-        </div>
-      </aside>
 
       {/* Main weather screen */}
       <main className="main">
@@ -301,8 +252,8 @@ function WeatherScreen({
               isMyLocation={isMyLocation}
               current={forecast.current}
               today={forecast.daily[0]}
+              rainChance={getRainChance(forecast)}
               isFavourite={isFavourite}
-              isGuest={isGuest}
               saveDisabled={!isGuest && !favouritesLoaded}
               onToggleFavourite={handleToggleFavourite}
             />
@@ -330,11 +281,13 @@ function WeatherScreen({
         )}
 
         <p className="attribution muted small">
-          <a href="https://open-meteo.com/">
-            Weather data by Open-Meteo.com
-          </a>
+          Data: <a href="https://open-meteo.com/">Open-Meteo</a>
+          {" · "}
+          <a href="https://www.geonames.org/">GeoNames</a>
         </p>
       </main>
+
+      {!isDesktop && <BottomBar {...navProps} />}
     </div>
   );
 }
