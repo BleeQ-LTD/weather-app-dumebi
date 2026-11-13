@@ -87,7 +87,7 @@ export default function CompleteProfileForm({ uid, onSaved }: Props) {
             </button>
 
             <button
-              className="btn btn-ghost"
+              className="btn btn-secondary"
               type="button"
               onClick={handleSignOut}
               disabled={saving}

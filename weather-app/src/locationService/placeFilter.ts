@@ -1,31 +1,31 @@
 import type { GeocodingResult } from "./locationTypes";
 
-// Places with fewer inhabitants than this are hidden from the suggestions,
-// unless they are a capital or a major administrative seat.
-export const MIN_POPULATION = 1000;
+// Fallback search only (used when the built-in place list can't load).
+// Same rules as the built-in list, as far as Open-Meteo allows:
+// cities need at least this many people; states and countries always count.
+export const MIN_POPULATION = 100_000;
 
-// GeoNames feature codes: capital, first-order seat and second-order seat.
-const MAJOR_PLACE_CODES = new Set(["PPLC", "PPLA", "PPLA2"]);
+// GeoNames feature codes for first-level divisions and countries.
+const ALWAYS_INCLUDED_CODES = new Set(["ADM1", "PCLI", "PCLD", "PCLF", "PCLS", "PCLIX", "PCL"]);
+
+// Historical, abandoned or destroyed places are never suggested.
+const EXCLUDED_CODES = new Set(["PPLH", "PPLQ", "PPLW", "PPLCH"]);
 
 function populationOf(result: GeocodingResult): number {
   return result.population ?? 0;
 }
 
 export function isNotablePlace(result: GeocodingResult): boolean {
-  if (result.feature_code && MAJOR_PLACE_CODES.has(result.feature_code)) {
-    return true;
-  }
+  const code = result.feature_code ?? "";
+  if (EXCLUDED_CODES.has(code)) return false;
+  if (ALWAYS_INCLUDED_CODES.has(code)) return true;
 
   return populationOf(result) >= MIN_POPULATION;
 }
 
-// Hides tiny hamlets and unclassified entries and lists the biggest places first.
-// If nothing qualifies (for example someone searches for a small village), the
-// original results are returned so a real small place can still be found.
+// Keeps qualifying places only and lists the biggest first.
 export function filterAndRankPlaces(results: GeocodingResult[]): GeocodingResult[] {
-  const notable = results.filter(isNotablePlace);
-
-  if (notable.length === 0) return results;
-
-  return [...notable].sort((a, b) => populationOf(b) - populationOf(a));
+  return results
+    .filter(isNotablePlace)
+    .sort((a, b) => populationOf(b) - populationOf(a));
 }

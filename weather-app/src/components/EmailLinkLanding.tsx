@@ -89,10 +89,10 @@ function EmailLinkLanding({ onDone }: EmailLinkLandingProps) {
         required
       />
 
-      <button type="submit" className="btn">
+      <button type="submit" className="btn btn-primary">
         Continue
       </button>
-      <button type="button" className="btn btn-ghost" onClick={() => leave(onDone)}>
+      <button type="button" className="btn btn-secondary" onClick={() => leave(onDone)}>
         Back to sign in
       </button>
     </form>

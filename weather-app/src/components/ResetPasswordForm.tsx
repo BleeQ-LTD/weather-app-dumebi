@@ -200,7 +200,7 @@ export default function ResetPasswordForm({
 
           {!success && (
             <button
-              className="btn btn-ghost"
+              className="btn btn-secondary"
               type="button"
               onClick={onBackToSignIn}
             >

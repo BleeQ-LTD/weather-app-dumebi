@@ -3,14 +3,15 @@ import type { CurrentWeather, DailyWeather } from "../weatherService/weatherType
 import type { TemperatureUnit } from "../firebaseService/profileService";
 import { formatTemperature } from "../weatherService/temperatureUtils";
 import { getWeatherIcon } from "../weatherService/weatherUtils";
+import SaveButton from "./SaveButton";
 
 interface CurrentConditionsProps {
   name: string;
   isMyLocation: boolean;
   current: CurrentWeather;
   today: DailyWeather | undefined;
+  rainChance: number | null;
   isFavourite: boolean;
-  isGuest: boolean;
   saveDisabled: boolean;
   temperatureUnit: TemperatureUnit;
   onToggleFavourite: () => void;
@@ -21,8 +22,8 @@ function CurrentConditions({
   isMyLocation,
   current,
   today,
+  rainChance,
   isFavourite,
-  isGuest,
   saveDisabled,
   temperatureUnit,
   onToggleFavourite,
@@ -50,14 +51,15 @@ function CurrentConditions({
         </p>
       )}
 
-      <button
-        type="button"
-        className="btn btn-ghost"
+      {rainChance !== null && (
+        <p className="current-rain">Chance of rain {rainChance}%</p>
+      )}
+
+      <SaveButton
+        isSaved={isFavourite}
         disabled={saveDisabled}
-        onClick={onToggleFavourite}
-      >
-        {isGuest ? "☆ Sign in to save" : isFavourite ? "★ Saved" : "☆ Save"}
-      </button>
+        onToggle={onToggleFavourite}
+      />
     </header>
   );
 }

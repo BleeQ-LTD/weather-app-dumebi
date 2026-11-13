@@ -1,12 +1,13 @@
 import type { PlaceSuggestion, GeocodingResponse, Location } from "./locationTypes";
 import { makePlace } from "./placeLabel";
 import { isSamePlace } from "../firebaseService/favouriteId";
+import { filterAndRankPlaces } from "./placeFilter";
 
 const GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
 
 // Ask for extra results, because several records describe the same city
 const FETCH_COUNT = 15;
-const MAX_RESULTS = 6;
+const MAX_RESULTS = 8;
 
 export type GeocodingResult = NonNullable<GeocodingResponse["results"]>[number];
 
@@ -23,9 +24,13 @@ export function toSuggestions(results: GeocodingResult[]): PlaceSuggestion[] {
       longitude: result.longitude,
     };
 
-    if (suggestions.some((s) => isSamePlace(s.location, location))) continue;
+    const code = result.feature_code ?? "";
+    const kind = code === "ADM1" ? "state" : code.startsWith("PCL") ? "country" : "city";
 
-    suggestions.push({ id: result.id, label: place.name, location });
+    // One per place and kind: Lagos the city and Lagos State are both shown
+    if (suggestions.some((s) => s.kind === kind && isSamePlace(s.location, location))) continue;
+
+    suggestions.push({ id: result.id, label: place.name, location, kind });
     if (suggestions.length === MAX_RESULTS) break;
   }
 
@@ -51,5 +56,7 @@ export async function searchPlaces(input: string): Promise<PlaceSuggestion[]> {
     throw new Error("Unexpected response from the geocoding service.");
   }
 
-  return toSuggestions(data.results ?? []);
+  // Same rules as the built-in list: cities of 100,000+, every state and
+  // country, biggest first.
+  return toSuggestions(filterAndRankPlaces(data.results ?? []));
 }

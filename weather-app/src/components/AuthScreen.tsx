@@ -299,7 +299,7 @@ function AuthScreen({
           <div className="auth-google-option">
             <button
               type="button"
-              className="btn btn-ghost"
+              className="btn btn-secondary"
               onClick={() => onGoogleSignIn?.(mode)}
               disabled={googleBusy || submitting}
             >
@@ -321,7 +321,7 @@ function AuthScreen({
         <div className="guest-option">
           <button
             type="button"
-            className="btn btn-ghost"
+            className="btn btn-secondary"
             onClick={onContinueAsGuest}
           >
             Continue as guest

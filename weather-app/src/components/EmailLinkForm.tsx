@@ -48,10 +48,10 @@ function EmailLinkForm({ onBack }: EmailLinkFormProps) {
       )}
       {message && <p role="status">{message}</p>}
 
-      <button type="submit" className="btn" disabled={busy}>
+      <button type="submit" className="btn btn-primary" disabled={busy}>
         {busy ? "Sending..." : "Email me a link"}
       </button>
-      <button type="button" className="btn btn-ghost" onClick={onBack}>
+      <button type="button" className="btn btn-secondary" onClick={onBack}>
         Back to sign in
       </button>
     </form>
