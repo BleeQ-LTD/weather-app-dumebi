@@ -3,14 +3,14 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import AccountPanel from "./AccountPanel";
 import BottomSheet from "./BottomSheet";
 import FavouritesPanel from "./FavouritesPanel";
-import { GearIcon, PinIcon, UserIcon } from "./Icons";
+import { CompareIcon, GearIcon, PinIcon, UserIcon } from "./Icons";
 import type { Location } from "../locationService/locationTypes";
 import type { AppNavProps } from "./navTypes";
 import StarIcon from "./StarIcon";
-import UnitToggle from "./UnitToggle";
+import SettingsPanel from "./SettingsPanel";
 import "../styles/sidebar.css";
 
-type SheetName = "favourites" | "units" | "account";
+type SheetName = "favourites" | "settings" | "account";
 
 interface BarItemProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children"> {
@@ -33,8 +33,8 @@ function BarItem({ icon, label, active = false, type = "button", ...rest }: BarI
   );
 }
 
-// The phone navigation: four labelled items along the bottom of the screen.
-// Favourites, Units and Account open as sheets that slide up.
+// The phone navigation: five labelled items along the bottom of the screen.
+// Favourites, Settings and Account open as sheets that slide up.
 function BottomBar({
   user,
   myLocation,
@@ -44,8 +44,16 @@ function BottomBar({
   activeFavouriteId,
   temperatureUnit,
   unitError,
+  theme,
+  onChangeTheme,
+  distanceUnit,
+  onChangeDistanceUnit,
+  appVersion,
+  onOpenWhatsNew,
   onChangeUnit,
   onSelect,
+  compareOpen,
+  onOpenCompare,
   onRemoveFavourite,
   onRequestSignIn,
   onOpenProfile,
@@ -70,6 +78,12 @@ function BottomBar({
           onClick={() => myLocation && onSelect(myLocation)}
         />
         <BarItem
+          icon={<CompareIcon />}
+          label="Compare"
+          active={compareOpen}
+          onClick={onOpenCompare}
+        />
+        <BarItem
           icon={<StarIcon filled={false} size={20} />}
           label="Favourites"
           aria-haspopup="dialog"
@@ -77,9 +91,9 @@ function BottomBar({
         />
         <BarItem
           icon={<GearIcon />}
-          label="Units"
+          label="Settings"
           aria-haspopup="dialog"
-          onClick={() => setSheet("units")}
+          onClick={() => setSheet("settings")}
         />
         {user === null ? (
           <BarItem icon={<UserIcon />} label="Sign in" onClick={onRequestSignIn} />
@@ -108,14 +122,19 @@ function BottomBar({
         </BottomSheet>
       )}
 
-      {sheet === "units" && (
-        <BottomSheet label="Units" onClose={closeSheet}>
-          <UnitToggle value={temperatureUnit} onChange={onChangeUnit} />
-          {unitError && (
-            <p className="error-text" role="alert">
-              {unitError}
-            </p>
-          )}
+      {sheet === "settings" && (
+        <BottomSheet label="Settings" onClose={closeSheet}>
+          <SettingsPanel
+            temperatureUnit={temperatureUnit}
+            unitError={unitError}
+            onChangeUnit={onChangeUnit}
+            theme={theme}
+            onChangeTheme={onChangeTheme}
+            distanceUnit={distanceUnit}
+            onChangeDistanceUnit={onChangeDistanceUnit}
+            appVersion={appVersion}
+            onOpenWhatsNew={onOpenWhatsNew}
+          />
         </BottomSheet>
       )}
 

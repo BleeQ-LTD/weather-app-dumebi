@@ -52,7 +52,19 @@ function CurrentConditions({
       )}
 
       {rainChance !== null && (
-        <p className="current-rain">Chance of rain {rainChance}%</p>
+        <p className="current-rain">
+          <svg
+            className="current-rain-icon"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M12 2.5c-.4 0-.7.2-.9.5C9.3 5.6 5.5 11 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 11 14.7 5.6 12.9 3c-.2-.3-.5-.5-.9-.5z" />
+          </svg>
+          Chance of rain {rainChance}%
+        </p>
       )}
 
       <SaveButton

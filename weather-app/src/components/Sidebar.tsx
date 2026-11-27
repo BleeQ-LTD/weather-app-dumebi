@@ -4,16 +4,16 @@ import AccountPanel from "./AccountPanel";
 import Avatar from "./Avatar";
 import FavouritesPanel from "./FavouritesPanel";
 import FlyoutPanel from "./FlyoutPanel";
-import { ChevronIcon, GearIcon, PinIcon } from "./Icons";
+import { ChevronIcon, CompareIcon, GearIcon, PinIcon } from "./Icons";
 import NavItem from "./NavItem";
 import type { Location } from "../locationService/locationTypes";
 import type { AppNavProps } from "./navTypes";
 import SidebarToggle from "./SidebarToggle";
 import StarIcon from "./StarIcon";
-import UnitToggle from "./UnitToggle";
+import SettingsPanel from "./SettingsPanel";
 import "../styles/sidebar.css";
 
-type PanelName = "favourites" | "units" | "account";
+type PanelName = "favourites" | "settings" | "account";
 
 interface OpenPanel {
   name: PanelName;
@@ -39,15 +39,33 @@ function Sidebar({
   temperatureUnit,
   unitError,
   onChangeUnit,
+  theme,
+  onChangeTheme,
+  distanceUnit,
+  onChangeDistanceUnit,
+  appVersion,
+  onOpenWhatsNew,
   onSelect,
+  compareOpen,
+  onOpenCompare,
   onRemoveFavourite,
   onRequestSignIn,
   onOpenProfile,
   onSignOut,
 }: SidebarProps) {
   const [openPanel, setOpenPanel] = useState<OpenPanel | null>(null);
-  const [favouritesExpanded, setFavouritesExpanded] = useState(true);
   const isGuest = user === null;
+  // Favourites start open for signed-in users and closed for guests (who
+  // have none to show). Settings always starts closed.
+  const [favouritesExpanded, setFavouritesExpanded] = useState(!isGuest);
+  const [settingsExpanded, setSettingsExpanded] = useState(false);
+
+  // Signing in or out resets Favourites to that default
+  const [expandedFor, setExpandedFor] = useState(isGuest);
+  if (expandedFor !== isGuest) {
+    setExpandedFor(isGuest);
+    setFavouritesExpanded(!isGuest);
+  }
 
   const closePanel = useCallback(() => setOpenPanel(null), []);
 
@@ -78,15 +96,18 @@ function Sidebar({
     />
   );
 
-  const unitsPanel = (
-    <>
-      <UnitToggle value={temperatureUnit} onChange={onChangeUnit} />
-      {unitError && (
-        <p className="error-text" role="alert">
-          {unitError}
-        </p>
-      )}
-    </>
+  const settingsPanel = (
+    <SettingsPanel
+      temperatureUnit={temperatureUnit}
+      unitError={unitError}
+      onChangeUnit={onChangeUnit}
+      theme={theme}
+      onChangeTheme={onChangeTheme}
+      distanceUnit={distanceUnit}
+      onChangeDistanceUnit={onChangeDistanceUnit}
+      appVersion={appVersion}
+      onOpenWhatsNew={onOpenWhatsNew}
+    />
   );
 
   return (
@@ -100,12 +121,24 @@ function Sidebar({
           <NavItem
             icon={<PinIcon />}
             label="My Location"
-            detail={collapsed ? undefined : myLocation.name}
+            detail={myLocation.name}
             active={isMyLocationActive}
             collapsed={collapsed}
             onClick={() => onSelect(myLocation)}
           />
         )}
+
+        <NavItem
+          icon={<CompareIcon />}
+          label="Compare"
+          detail="Two cities side by side"
+          active={compareOpen}
+          collapsed={collapsed}
+          onClick={() => {
+            closePanel();
+            onOpenCompare();
+          }}
+        />
 
         {collapsed ? (
           <>
@@ -131,21 +164,21 @@ function Sidebar({
 
             <NavItem
               icon={<GearIcon />}
-              label="Units"
+              label="Settings"
               collapsed
               aria-haspopup="dialog"
-              aria-expanded={openPanel?.name === "units"}
-              onClick={(event) => togglePanel("units", event.currentTarget)}
+              aria-expanded={openPanel?.name === "settings"}
+              onClick={(event) => togglePanel("settings", event.currentTarget)}
             />
-            {openPanel?.name === "units" && (
+            {openPanel?.name === "settings" && (
               <FlyoutPanel
                 anchor={openPanel.anchor}
-                label="Units"
+                label="Settings"
                 placement="side"
                 onClose={closePanel}
               >
-                <h2 className="flyout-title">Units</h2>
-                {unitsPanel}
+                <h2 className="flyout-title">Settings</h2>
+                {settingsPanel}
               </FlyoutPanel>
             )}
           </>
@@ -164,18 +197,18 @@ function Sidebar({
             />
             {favouritesExpanded && <div className="nav-section">{favouritesPanel}</div>}
 
-            <div className="units-row">
-              <span className="nav-icon">
-                <GearIcon />
-              </span>
-              <span className="nav-label">Units</span>
-              <UnitToggle value={temperatureUnit} onChange={onChangeUnit} />
-            </div>
-            {unitError && (
-              <p className="error-text units-error" role="alert">
-                {unitError}
-              </p>
-            )}
+            <NavItem
+              icon={<GearIcon />}
+              label="Settings"
+              trailing={
+                <span className="nav-chevron">
+                  <ChevronIcon />
+                </span>
+              }
+              aria-expanded={settingsExpanded}
+              onClick={() => setSettingsExpanded((expanded) => !expanded)}
+            />
+            {settingsExpanded && <div className="nav-section">{settingsPanel}</div>}
           </>
         )}
       </nav>
