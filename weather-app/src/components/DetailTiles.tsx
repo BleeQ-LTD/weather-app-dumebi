@@ -8,6 +8,12 @@ import type {
 import type { TemperatureUnit } from "../firebaseService/profileService";
 import { formatTemperature } from "../weatherService/temperatureUtils";
 import {
+  formatDistance,
+  formatRainAmount,
+  formatSpeed,
+  type DistanceUnit,
+} from "../weatherService/distanceUtils";
+import {
   formatTime,
   getCompassDirection,
   getFeelsLikeDescription,
@@ -20,6 +26,7 @@ interface DetailTilesProps {
   details: WeatherDetails;
   today: DailyWeather | undefined;
   temperatureUnit: TemperatureUnit;
+  distanceUnit?: DistanceUnit;
 }
 
 interface TileProps {
@@ -45,8 +52,11 @@ function DetailTiles({
   details,
   today,
   temperatureUnit,
+  distanceUnit = "metric",
 }: DetailTilesProps) {
   const uv = details.uvIndex;
+  const wind = formatSpeed(current.windSpeed, distanceUnit);
+  const gusts = formatSpeed(current.windGusts, distanceUnit);
 
   return (
     <div className="tiles">
@@ -73,11 +83,11 @@ function DetailTiles({
         title="Wind"
         value={
           <>
-            {Math.round(current.windSpeed)}{" "}
-            <span className="tile-unit">km/h</span>
+            {wind.value}{" "}
+            <span className="tile-unit">{wind.unit}</span>
           </>
         }
-        note={`Gusts up to ${Math.round(current.windGusts)} km/h`}
+        note={`Gusts up to ${gusts.value} ${gusts.unit}`}
       >
         <p className="wind-direction">
           <span
@@ -114,7 +124,7 @@ function DetailTiles({
 
       <Tile
         title="Visibility"
-        value={details.visibilityKm === null ? "–" : `${details.visibilityKm} km`}
+        value={details.visibilityKm === null ? "–" : formatDistance(details.visibilityKm, distanceUnit)}
         note={
           details.visibilityKm === null
             ? undefined
@@ -134,7 +144,7 @@ function DetailTiles({
 
       <Tile
         title="Precipitation"
-        value={`${details.precipitationNext24h} mm`}
+        value={formatRainAmount(details.precipitationNext24h, distanceUnit)}
         note="Expected in the next 24 hours."
       />
     </div>

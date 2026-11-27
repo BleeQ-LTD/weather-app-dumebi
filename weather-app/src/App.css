@@ -219,16 +219,32 @@ input {
   color: var(--muted);
 }
 
+/* ---------- Theme colours for fields, raised bars and links ---------- */
+:root {
+  --field-bg: #1f1f1f;
+  --raised-bg: #2b2b2b;
+  --line: #555;
+  --link-muted: #aaa;
+  --link-hover: #fff;
+}
+
+:root[data-theme="light"] {
+  --field-bg: #ffffff;
+  --raised-bg: #f3f4f6;
+  --line: #d1d5db;
+  --link-muted: #4b5563;
+  --link-hover: #111827;
+}
+
 /* ---------- Weather screen layout ---------- */
 :root {
   --page-bg: #242424;
   /* same as the page background in index.css */
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
+/* light theme (set by the app's theme toggle) */
+:root[data-theme="light"] {
     --page-bg: #ffffff;
-  }
 }
 
 .app {
@@ -569,16 +585,20 @@ input {
 .update-banner {
   position: fixed;
   bottom: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.6rem 1rem;
-  border-radius: 0.75rem;
-  background: #2b2b2b;
-  border: 1px solid #555;
+  left: 0;
+  right: 0;
+  margin-inline: auto; /* centred without transform, so the slide-in can use it */
   z-index: 50;
+  width: min(520px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--raised-bg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  animation: overlay-rise 200ms ease-out;
 }
 
 
@@ -618,7 +638,7 @@ input {
   padding: 0;
   height: auto;
   border-radius: 0;
-  color: #a8a8a8;
+  color: var(--link-muted);
   font-size: var(--fs-sm);
   font-weight: var(--fw-regular);
   white-space: nowrap;
@@ -627,7 +647,7 @@ input {
 }
 
 .auth-extra-links .btn:hover {
-  color: #ffffff;
+  color: var(--link-hover);
   background: transparent;
   text-decoration: underline;
 }
@@ -646,14 +666,14 @@ input {
   padding: 4px 8px;
   border: none;
   background: transparent;
-  color: #aaa;
+  color: var(--link-muted);
   font: inherit;
   font-size: var(--fs-sm);
   cursor: pointer;
 }
 
 .auth-forgot-link:hover {
-  color: #fff;
+  color: var(--link-hover);
   text-decoration: underline;
 }
 
@@ -969,8 +989,8 @@ button:disabled {
 .auth-form input {
   padding: 0.55rem 0.7rem;
   border-radius: 0.5rem;
-  border: 1px solid #555;
-  background: #1f1f1f;
+  border: 1px solid var(--line);
+  background: var(--field-bg);
   color: inherit;
   font: inherit;
 }
@@ -989,8 +1009,8 @@ button:disabled {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: #2b2b2b;
-  border-bottom: 1px solid #555;
+  background: var(--raised-bg);
+  border-bottom: 1px solid var(--line);
 }
 
 .auth-page {
@@ -1010,8 +1030,8 @@ button:disabled {
 .auth-form input {
   padding: 0.55rem 0.7rem;
   border-radius: 0.5rem;
-  border: 1px solid #555;
-  background: #1f1f1f;
+  border: 1px solid var(--line);
+  background: var(--field-bg);
   color: inherit;
   font: inherit;
 }
@@ -1030,8 +1050,8 @@ button:disabled {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: #2b2b2b;
-  border-bottom: 1px solid #555;
+  background: var(--raised-bg);
+  border-bottom: 1px solid var(--line);
 }
 
 /* =========================================
@@ -1175,34 +1195,41 @@ button:disabled {
 }
 
 /* Light theme: same moods, brighter skies for dark text */
-@media (prefers-color-scheme: light) {
-  .sky-clear-day {
+/* light theme (set by the app's theme toggle) */
+:root[data-theme="light"] .sky-clear-day {
     background-image: linear-gradient(160deg, #8ec5ff 0%, #b9dcff 45%, #e3f1ff 70%, #9fcdfa 100%);
-  }
-  .sky-clear-night {
+}
+
+:root[data-theme="light"] .sky-clear-night {
     background-image: linear-gradient(160deg, #b8bde8 0%, #cfd2f2 45%, #e4e5f8 70%, #b3b8e0 100%);
-  }
-  .sky-cloudy-day {
+}
+
+:root[data-theme="light"] .sky-cloudy-day {
     background-image: linear-gradient(160deg, #c9d3de 0%, #dbe2ea 45%, #eef2f6 70%, #c3ccd7 100%);
-  }
-  .sky-cloudy-night {
+}
+
+:root[data-theme="light"] .sky-cloudy-night {
     background-image: linear-gradient(160deg, #b9c0ca 0%, #cdd3db 45%, #e0e4e9 70%, #b5bcc6 100%);
-  }
-  .sky-rain-day {
+}
+
+:root[data-theme="light"] .sky-rain-day {
     background-image: linear-gradient(160deg, #a9bccf 0%, #c3d2e0 45%, #dde6ee 70%, #a6b8ca 100%);
-  }
-  .sky-rain-night {
+}
+
+:root[data-theme="light"] .sky-rain-night {
     background-image: linear-gradient(160deg, #9fadbe 0%, #b8c4d2 45%, #d1d9e2 70%, #9caabb 100%);
-  }
-  .sky-storm {
+}
+
+:root[data-theme="light"] .sky-storm {
     background-image: linear-gradient(160deg, #aaa3c2 0%, #c2bcd6 45%, #dcd8e8 70%, #a69fbe 100%);
-  }
-  .sky-snow {
+}
+
+:root[data-theme="light"] .sky-snow {
     background-image: linear-gradient(160deg, #dbe7f3 0%, #eaf1f8 45%, #f7fafd 70%, #d6e2ee 100%);
-  }
-  .sky-fog {
+}
+
+:root[data-theme="light"] .sky-fog {
     background-image: linear-gradient(160deg, #d3d5d8 0%, #e1e3e5 45%, #eeeff0 70%, #cfd1d4 100%);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1256,9 +1283,21 @@ button:disabled {
   backdrop-filter: blur(16px);
 }
 
+/* Near-white so it reads on every sky; the droplet keeps the purple accent */
 .app .current-rain {
-  color: var(--sky-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #e4e6ff;
   font-weight: var(--fw-semibold);
+}
+
+.current-rain-icon {
+  color: var(--sky-accent);
+}
+
+:root[data-theme="light"] .app .current-rain {
+  color: var(--sky-accent);
 }
 
 .app .current .btn-secondary {
@@ -1270,15 +1309,620 @@ button:disabled {
   color: var(--sky-accent);
 }
 
-@media (prefers-color-scheme: light) {
-  .app {
+/* light theme (set by the app's theme toggle) */
+:root[data-theme="light"] .app {
     --sky-accent: #3d43c9;
     --sky-field-bg: rgba(255, 255, 255, 0.55);
     --sky-field-border: rgba(20, 30, 60, 0.18);
     --sky-placeholder: rgba(20, 30, 60, 0.7);
+}
+
+:root[data-theme="light"] .app .search-results {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+/* ---------- Overlays (sign-in, profile, reset, email link, complete profile) ----------
+   A card over the blurred weather: centred on desktop, a tall sheet on phones. */
+:root {
+  --overlay-blur: 14px;
+  --overlay-tint: rgba(10, 14, 28, 0.32);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.overlay-backdrop,
+.search-backdrop {
+  background: var(--overlay-tint);
+  -webkit-backdrop-filter: blur(var(--overlay-blur));
+  backdrop-filter: blur(var(--overlay-blur));
+  animation: overlay-fade 200ms ease-out;
+}
+
+.overlay-backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+.overlay-card {
+  position: relative;
+  width: min(420px, 100%);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 28px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background-color: color-mix(in srgb, var(--page-bg) 92%, transparent);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  outline: none;
+  animation: overlay-pop 200ms ease-out;
+}
+
+.overlay-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+}
+
+/* Content inside an overlay card */
+.auth-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.auth-panel .auth-form {
+  width: 100%;
+}
+
+.auth-panel .auth-brand {
+  padding: 0 28px; /* keep the title clear of the × button */
+}
+
+/* Views swapping inside one card (sign in ↔ forgot password) */
+.swap {
+  overflow: hidden;
+  transition: height 220ms ease;
+}
+
+.swap-view {
+  animation: overlay-fade 220ms ease-out;
+}
+
+@keyframes overlay-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlay-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes overlay-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Phones: a sheet filling most of the screen, a strip of weather above it */
+@media (max-width: 560px) {
+  .overlay {
+    align-items: end;
+    padding: 0;
   }
 
-  .app .search-results {
-    background: rgba(255, 255, 255, 0.6);
+  .overlay-card {
+    width: 100%;
+    height: calc(100dvh - 48px);
+    max-height: none;
+    padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+    border-bottom: 0;
+    border-radius: 20px 20px 0 0;
+    animation-name: overlay-rise;
   }
+}
+
+/* ---------- Search suggestions float over the page ---------- */
+.search {
+  position: relative;
+}
+
+.search.is-open {
+  z-index: 46; /* above its own blur (45) and the bottom bar (30) */
+}
+
+.search-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+}
+
+.search-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: overlay-fade 150ms ease-out;
+}
+
+.search-message {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--sky-field-border, var(--border));
+  background: rgba(10, 14, 28, 0.55);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+/* Phone sheets (Favourites, Units, Account) use the same blur */
+.sheet-backdrop {
+  background: var(--overlay-tint);
+  -webkit-backdrop-filter: blur(var(--overlay-blur));
+  backdrop-filter: blur(var(--overlay-blur));
+  animation: overlay-fade 200ms ease-out;
+}
+
+/* light theme (set by the app's theme toggle) */
+:root[data-theme="light"] .search-message {
+    background: rgba(255, 255, 255, 0.75);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay-backdrop,
+  .search-backdrop,
+  .sheet-backdrop,
+  .overlay-card,
+  .swap-view,
+  .search-panel {
+    animation: none;
+  }
+
+  .swap {
+    transition: none;
+  }
+}
+
+/* Profile: "Set a password" for Google-only accounts */
+.profile-set-password {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* ---------- Auth & profile fields: text boxes and the gender select ----------
+   Same sizes as before; quieter borders, a clear focus ring, and a select
+   that matches the text boxes instead of the browser's default. */
+:root {
+  --field-border: rgba(255, 255, 255, 0.12);
+  --field-border-hover: rgba(255, 255, 255, 0.24);
+  --field-focus-ring: color-mix(in srgb, var(--accent-strong) 35%, transparent);
+  --field-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
+:root[data-theme="light"] {
+  --field-border: rgba(17, 24, 39, 0.14);
+  --field-border-hover: rgba(17, 24, 39, 0.28);
+  --field-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
+.auth-panel .field {
+  font-weight: var(--fw-medium);
+}
+
+.auth-panel input:not([type="checkbox"]):not([type="radio"]):not([hidden]),
+.auth-panel select {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--field-border);
+  border-radius: 10px;
+  background-color: var(--field-bg);
+  color: inherit;
+  font: inherit;
+  font-weight: var(--fw-regular);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-panel input::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.auth-panel input:not([readonly]):hover,
+.auth-panel select:hover {
+  border-color: var(--field-border-hover);
+}
+
+.auth-panel input:not([readonly]):focus,
+.auth-panel select:focus {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 3px var(--field-focus-ring);
+}
+
+/* Profile details: read-only, so they look like text rather than inputs */
+.auth-panel input[readonly] {
+  background-color: var(--surface);
+  color: var(--muted);
+  cursor: default;
+}
+
+/* The gender select: own chevron, placeholder shown muted */
+.auth-panel select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.25rem;
+  background-image: var(--field-chevron);
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 12px;
+  cursor: pointer;
+}
+
+.auth-panel select:invalid {
+  color: var(--muted);
+}
+
+.auth-panel select option {
+  background-color: var(--page-bg);
+  color: CanvasText;
+}
+
+/* Autofilled fields keep the theme's field colour */
+.auth-panel input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--field-bg) inset;
+  box-shadow: 0 0 0 1000px var(--field-bg) inset;
+}
+
+.auth-panel input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--field-bg) inset, 0 0 0 3px var(--field-focus-ring);
+  box-shadow: 0 0 0 1000px var(--field-bg) inset, 0 0 0 3px var(--field-focus-ring);
+}
+
+/* Failed sign-in: tip for accounts created with Google */
+.auth-google-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--field-border);
+  background: var(--surface);
+  font-size: var(--fs-sm);
+}
+
+.auth-google-hint strong {
+  font-weight: var(--fw-semibold);
+}
+
+/* Profile: "Save changes" appears once something has been edited */
+.profile-save-bar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  animation: overlay-fade 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-save-bar {
+    animation: none;
+  }
+}
+
+/* ---------- Compare two cities ----------
+   One column per city, one row per measurement, so each line reads straight
+   across on phones, tablets and desktop alike. */
+.compare {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.compare-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.compare-header h1 {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+}
+
+.compare-pickers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.compare-table {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 16px;
+}
+
+.compare-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 0.8fr) 1fr 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.compare-row-head {
+  align-items: start;
+  border-top: 0;
+  padding-bottom: 16px;
+}
+
+.compare-label {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.compare-cell {
+  min-width: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--fw-medium);
+}
+
+.compare-city {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+}
+
+.compare-temp {
+  font-size: 3rem;
+  font-weight: var(--fw-hero);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.compare-condition {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.compare-empty {
+  padding: 12px 0;
+  font-size: var(--fs-sm);
+}
+
+.compare-summary {
+  text-align: center;
+  font-weight: var(--fw-medium);
+}
+
+/* Phones: pickers stacked so each suggestion list has full width; the
+   label column shrinks and the temperatures get smaller. */
+@media (max-width: 560px) {
+  .compare-pickers {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-table {
+    padding: 4px 12px;
+  }
+
+  .compare-row {
+    grid-template-columns: 76px 1fr 1fr;
+    gap: 8px;
+  }
+
+  .compare-label {
+    font-size: var(--fs-xs);
+  }
+
+  .compare-city {
+    font-size: var(--fs-md);
+  }
+
+  .compare-temp {
+    font-size: 2.25rem;
+  }
+}
+
+/* ---------- New version prompt and What's new ---------- */
+.update-banner-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.update-banner-text {
+  flex: 1;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+
+.update-banner-link,
+.settings-link {
+  margin-left: 6px;
+  color: var(--accent-text);
+  font-weight: var(--fw-semibold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.settings-link {
+  margin-left: 0;
+  font-size: inherit;
+}
+
+.update-banner-actions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
+.update-banner-actions .btn {
+  min-height: 36px;
+  padding-inline: 12px;
+}
+
+.update-banner-notes,
+.whats-new-notes {
+  margin: 0;
+  padding-left: 1.2rem;
+  list-style: disc;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.settings-version {
+  padding-top: 4px;
+}
+
+.whats-new {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.whats-new-release + .whats-new-release {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.whats-new-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.whats-new-version {
+  font-weight: var(--fw-semibold);
+}
+
+.whats-new-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  background: var(--accent-strong);
+  color: var(--on-accent);
+}
+
+/* Phones: above the bottom bar, buttons under the text */
+@media (max-width: 768px) {
+  .update-banner {
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .update-banner-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .update-banner-actions .btn {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .update-banner {
+    animation: none;
+  }
+}
+
+/* ---------- Recent searches (empty search box) ---------- */
+/* Heading and list share one box, like the suggestions list */
+.search-recent {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid var(--sky-field-border, var(--border));
+  background: rgba(10, 14, 28, 0.55);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+:root[data-theme="light"] .search-recent {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.search-recent .search-results,
+.app .search-recent .search-results {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.search-recent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 4px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.search-recent-clear {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--accent-text);
+}
+
+.search-recent-clear:hover {
+  text-decoration: underline;
+}
+
+.search-result-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.search-recent-icon {
+  flex: none;
+  color: var(--muted);
 }

@@ -29,18 +29,31 @@ import HourlyForecast from "./HourlyForecast";
 import DailyForecast from "./DailyForecast";
 import DetailTiles from "./DetailTiles";
 import SkyBackground from "./SkyBackground";
+import CompareView from "./CompareView";
 import { getRainChance, getSkyTheme } from "../weatherService/weatherUtils";
 import { getLastLocation } from "../locationService/lastLocation";
+import { useTheme } from "../utils/themePreference";
+import { useDistanceUnit } from "../utils/distancePreference";
 import { saveLastLocation } from "../locationService/lastLocation";
 
 interface WeatherScreenProps {
   user: User | null;
+  // Signed in and the profile is complete, so saving can go ahead
+  accountReady?: boolean;
+  // The sign-in overlay is open on top of this screen
+  signInOpen?: boolean;
+  appVersion?: string;
+  onOpenWhatsNew?: () => void;
   onOpenProfile?: () => void;
   onRequestSignIn: () => void;
 }
 
 function WeatherScreen({
   user,
+  accountReady = false,
+  signInOpen = false,
+  appVersion,
+  onOpenWhatsNew,
   onRequestSignIn,
   onOpenProfile
 }: WeatherScreenProps) {
@@ -50,6 +63,8 @@ function WeatherScreen({
     () => getStoredTemperatureUnit()
   );
   const [unitError, setUnitError] = useState("");
+  const { theme, changeTheme } = useTheme();
+  const { distanceUnit, changeDistanceUnit } = useDistanceUnit();
 
   useEffect(() => {
     let active = true;
@@ -121,7 +136,11 @@ function WeatherScreen({
     myLocation && location && isSamePlace(myLocation, location)
   );
 
+  // Compare two cities: replaces the forecast until closed (nothing is saved)
+  const [compareOpen, setCompareOpen] = useState(false);
+
   function handleSelect(next: Location) {
+    setCompareOpen(false);
     setSelected(next);
   }
 
@@ -148,10 +167,27 @@ function WeatherScreen({
     }
   }
 
+  // A guest who taps Save is asked to sign in; the city is saved for them as
+  // soon as their account is ready. Closing the sign-in card forgets it.
+  const [pendingSave, setPendingSave] = useState<Location | null>(null);
+
+  useEffect(() => {
+    if (!user && !signInOpen) setPendingSave(null);
+  }, [user, signInOpen]);
+
+  useEffect(() => {
+    if (!pendingSave || !accountReady || !favouritesLoaded) return;
+    setPendingSave(null);
+    add(pendingSave).catch((saveError) =>
+      console.error("Saving the city after sign-in failed:", saveError)
+    );
+  }, [pendingSave, accountReady, favouritesLoaded, add]);
+
   function handleToggleFavourite() {
     if (!location) return;
 
     if (isGuest) {
+      setPendingSave(location);
       onRequestSignIn();
     } else if (isFavourite) {
       savedMatches.forEach((f) => remove(f.id));
@@ -168,14 +204,22 @@ function WeatherScreen({
   const navProps: AppNavProps = {
     user,
     myLocation,
-    isMyLocationActive: isMyLocation,
+    isMyLocationActive: isMyLocation && !compareOpen,
     favourites,
     favouritesError,
     activeFavouriteId: currentId,
     temperatureUnit,
     unitError,
     onChangeUnit: handleChangeUnit,
+    theme,
+    onChangeTheme: changeTheme,
+    distanceUnit,
+    onChangeDistanceUnit: changeDistanceUnit,
+    appVersion,
+    onOpenWhatsNew,
     onSelect: handleSelect,
+    compareOpen,
+    onOpenCompare: () => setCompareOpen(true),
     onRemoveFavourite: remove,
     onRequestSignIn,
     onOpenProfile,
@@ -202,7 +246,15 @@ function WeatherScreen({
 
       {/* Main weather screen */}
       <main className="main">
-
+        {compareOpen ? (
+          <CompareView
+            initialCity={location}
+            temperatureUnit={temperatureUnit}
+            distanceUnit={distanceUnit}
+            onClose={() => setCompareOpen(false)}
+          />
+        ) : (
+        <>
         {/* Search bar: always above the location heading */}
         <div className="main-location-search">
           <LocationSearch onSelect={handleSelect} />
@@ -275,9 +327,13 @@ function WeatherScreen({
                 details={forecast.details}
                 today={forecast.daily[0]}
                 temperatureUnit={temperatureUnit}
+                distanceUnit={distanceUnit}
               />
             </div>
           </>
+        )}
+
+        </>
         )}
 
         <p className="attribution muted small">

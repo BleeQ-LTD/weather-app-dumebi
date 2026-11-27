@@ -1,9 +1,15 @@
 
 import type { Location } from "./locationTypes";
 
+// The placeholder shown while "My Location" is being named. A place saved
+// under it would keep showing "My Location" on every visit, so it's skipped.
+const PLACEHOLDER_NAME = "My Location";
+
 const LAST_LOCATION_KEY = "weather-app-last-location";
 
 export function saveLastLocation(location: Location): void {
+  if (location.name === PLACEHOLDER_NAME) return;
+
   try {
     localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(location));
   } catch (error) {
@@ -29,7 +35,8 @@ export function getLastLocation(): Location | null {
       typeof location.latitude !== "number" ||
       !Number.isFinite(location.latitude) ||
       typeof location.longitude !== "number" ||
-      !Number.isFinite(location.longitude)
+      !Number.isFinite(location.longitude) ||
+      location.name === PLACEHOLDER_NAME
     ) {
       return null;
     }

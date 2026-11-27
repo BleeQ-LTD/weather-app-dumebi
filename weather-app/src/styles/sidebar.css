@@ -20,11 +20,12 @@
   transition: width 0.25s ease, flex-basis 0.25s ease;
 }
 
+/* Collapsing only narrows the sidebar: padding and alignment stay the same,
+   so every icon keeps its exact position (20px from the left edge) and only
+   the text fades out. */
 .sidebar.collapsed {
   flex-basis: 64px;
   width: 64px;
-  align-items: center;
-  padding-inline: 0;
 }
 
 .sidebar-header {
@@ -34,10 +35,7 @@
   padding: 0 2px 8px;
 }
 
-.sidebar.collapsed .sidebar-header {
-  justify-content: center;
-  padding-inline: 0;
-}
+
 
 .sidebar-nav {
   display: flex;
@@ -46,9 +44,7 @@
   width: 100%;
 }
 
-.sidebar.collapsed .sidebar-nav {
-  align-items: center;
-}
+
 
 /* The sidebar toggle and the sheet's close button */
 .icon-button {
@@ -75,9 +71,11 @@
   gap: 12px;
   width: 100%;
   min-height: var(--btn-min-height);
-  padding: 8px 12px;
+  padding: 8px 10px;
   border-radius: 12px;
   text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .nav-item:hover {
@@ -88,10 +86,16 @@
   background: var(--surface-strong);
 }
 
-.nav-item.collapsed {
-  justify-content: center;
-  width: var(--btn-min-height);
-  padding: 0;
+/* Text stays laid out (so nothing reflows mid-animation) and fades away */
+.nav-text,
+.nav-item > .nav-chevron {
+  transition: opacity 0.15s ease;
+}
+
+.nav-item.collapsed .nav-text,
+.nav-item.collapsed > .nav-chevron {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .nav-icon {
@@ -230,7 +234,8 @@
 
 .unit-toggle {
   display: inline-grid;
-  grid-template-columns: 1fr 1fr;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   gap: 2px;
   padding: 2px;
   border-radius: 10px;
@@ -253,6 +258,50 @@
   color: var(--on-accent);
 }
 
+/* Settings (Units + Theme): label above each switch, switches full width */
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-label {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.settings-row .unit-toggle {
+  display: grid;
+  width: 100%;
+}
+
+.settings-row .unit-option {
+  min-width: 0;
+}
+
+/* Theme switch: icon + word */
+.theme-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.theme-option svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
 /* Account row at the bottom */
 .sidebar-footer {
   width: 100%;
@@ -261,10 +310,7 @@
   border-top: 1px solid var(--border);
 }
 
-.sidebar.collapsed .sidebar-footer {
-  display: flex;
-  justify-content: center;
-}
+
 
 .avatar {
   display: inline-grid;
@@ -336,7 +382,7 @@
   left: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border);
   background-color: var(--page-bg);
@@ -419,7 +465,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sidebar,
-  .nav-chevron {
+  .nav-chevron,
+  .nav-text {
     transition: none;
   }
 }

@@ -46,11 +46,10 @@
   --btn-font-weight: var(--fw-semibold);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
+/* light theme (set by the app's theme toggle) */
+:root[data-theme="light"] {
     /* Same checks on the light theme: 6.6:1 on white, 5.0:1 on the "Now" hour */
     --accent-text: #4349d6;
-  }
 }
 
 @media (max-width: 560px) {

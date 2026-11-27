@@ -1,5 +1,6 @@
 import type { Location } from "./locationTypes";
-import { buildPlaceLabel } from "./placeLabel";
+import { makePlace } from "./placeLabel";
+import { loadPlaceIndex, nearestCity } from "./placeIndex";
 
 export async function getApproximateLocation(): Promise<Location | null> {
   try {
@@ -11,6 +12,7 @@ export async function getApproximateLocation(): Promise<Location | null> {
       longitude?: number;
       city?: string;
       countryName?: string;
+      countryCode?: string;
       locality?: string;
       principalSubdivision?: string;
     } = await response.json();
@@ -20,12 +22,7 @@ export async function getApproximateLocation(): Promise<Location | null> {
     }
 
     return {
-      name:
-        buildPlaceLabel([
-          data.city || data.locality,
-          data.principalSubdivision,
-          data.countryName,
-        ]) || DEFAULT_PLACE_NAME, 
+      name: placeLabelFrom(data) || DEFAULT_PLACE_NAME,
       latitude: data.latitude,
       longitude: data.longitude,
     };
@@ -34,7 +31,20 @@ export async function getApproximateLocation(): Promise<Location | null> {
   }
 }
 
+// Shown only until the real place name is known; never saved.
 export const DEFAULT_PLACE_NAME = "My Location";
+
+// The app's one label format, "City, Country" (no state in between).
+function placeLabelFrom(data: {
+  city?: string;
+  locality?: string;
+  countryName?: string;
+  countryCode?: string;
+}): string {
+  const city = (data.city || data.locality || "").trim();
+  if (!city) return "";
+  return makePlace(city, data.countryCode, data.countryName).name;
+}
 
 const REVERSE_GEOCODE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
 
@@ -91,14 +101,10 @@ async function fetchPlaceName(
       locality?: string;
       principalSubdivision?: string;
       countryName?: string;
+      countryCode?: string;
     } = await response.json();
 
-    const label = buildPlaceLabel([
-      data.city || data.locality,
-      data.principalSubdivision,
-      data.countryName,
-    ]);
-    return label || null;
+    return placeLabelFrom(data) || null;
   } catch {
     return null;
   }
@@ -126,11 +132,41 @@ export async function getPlaceName(
   }
 }
 
+// Backup name from the app's own place list: the nearest city within 50 km,
+// so a slow or blocked lookup service doesn't leave "My Location" on screen.
+export async function getNearbyPlaceName(
+  latitude: number,
+  longitude: number,
+  timeoutMs: number = PLACE_NAME_TIMEOUT_MS
+): Promise<string | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), timeoutMs);
+  });
+
+  const lookup = loadPlaceIndex()
+    .then((index) => nearestCity(index, latitude, longitude)?.name ?? null)
+    .catch(() => null);
+
+  try {
+    return await Promise.race([lookup, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function locateUser(onLocation: (location: Location) => void): Promise<void> {
   const { latitude, longitude } = await getCurrentCoordinates();
 
   onLocation({ name: DEFAULT_PLACE_NAME, latitude, longitude });
 
-  const name = await getPlaceName(latitude, longitude);
-  if (name) onLocation({ name, latitude, longitude });
+  // Both start at once and share the same time limit; the lookup service's
+  // name wins (it knows towns and districts), the nearby city is the backup.
+  const [name, nearby] = await Promise.all([
+    getPlaceName(latitude, longitude),
+    getNearbyPlaceName(latitude, longitude),
+  ]);
+
+  const best = name ?? nearby;
+  if (best) onLocation({ name: best, latitude, longitude });
 }
