@@ -35,13 +35,13 @@ function NavItem({
       {...rest}
     >
       <span className="nav-icon">{icon}</span>
-      {!collapsed && (
-        <span className="nav-text">
-          <span className="nav-label">{label}</span>
-          {detail && <span className="nav-detail">{detail}</span>}
-        </span>
-      )}
-      {!collapsed && trailing}
+      {/* Always rendered: hidden with CSS when collapsed, so the row never
+          reflows while the sidebar animates */}
+      <span className="nav-text" aria-hidden={collapsed || undefined}>
+        <span className="nav-label">{label}</span>
+        {detail && <span className="nav-detail">{detail}</span>}
+      </span>
+      {trailing}
     </button>
   );
 }

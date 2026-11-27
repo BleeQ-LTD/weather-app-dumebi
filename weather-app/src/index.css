@@ -3,8 +3,9 @@
   line-height: 1.5;
   font-weight: 400;
 
-  /* Existing colour scheme: dark by default, light when the system is light */
-  color-scheme: light dark;
+  /* Dark by default; the theme toggle (Settings) sets data-theme="light".
+     "System" follows the device; see utils/themePreference.ts */
+  color-scheme: dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
 
@@ -14,11 +15,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
+/* light theme (set by the app's theme toggle) */
+:root[data-theme="light"] {
+    color-scheme: light;
     color: #213547;
     background-color: #ffffff;
-  }
 }
 
 *,
