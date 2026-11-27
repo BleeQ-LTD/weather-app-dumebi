@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { getDisplayName } from "../utils/accountDisplay";
+import { fullName, getDisplayName } from "../utils/accountDisplay";
 import AccountPanel from "./AccountPanel";
 import Avatar from "./Avatar";
 import FavouritesPanel from "./FavouritesPanel";
@@ -45,6 +45,9 @@ function Sidebar({
   onChangeDistanceUnit,
   appVersion,
   onOpenWhatsNew,
+  accountPhoto,
+  accountFirstName,
+  accountLastName,
   onSelect,
   compareOpen,
   onOpenCompare,
@@ -225,8 +228,14 @@ function Sidebar({
         ) : (
           <>
             <NavItem
-              icon={<Avatar user={user} />}
-              label={getDisplayName(user)}
+              icon={
+                <Avatar
+                  user={user}
+                  photo={accountPhoto}
+                  name={fullName(accountFirstName, accountLastName)}
+                />
+              }
+              label={accountFirstName?.trim() || getDisplayName(user)}
               collapsed={collapsed}
               trailing={
                 <span className="nav-chevron">
@@ -246,6 +255,7 @@ function Sidebar({
               >
                 <AccountPanel
                   user={user}
+                  name={fullName(accountFirstName, accountLastName)}
                   onOpenProfile={onOpenProfile}
                   onSignOut={onSignOut}
                   onDone={closePanel}

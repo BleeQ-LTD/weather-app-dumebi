@@ -1,21 +1,26 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
-// One value per build. It is written into the app and into version.json,
-// so the app can tell when a newer build has been deployed.
-const version = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GITHUB_SHA ?? String(Date.now())
+import { readFileSync } from 'node:fs'
+
+// The release number people see (bump it in package.json for each release),
+// and a build ID that is different for every deploy. Both are written into
+// the app and into version.json, so an open tab can tell a newer build is live.
+const version: string = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version
+const build = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GITHUB_SHA ?? String(Date.now())
 
 export default defineConfig({
   envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
   define: {
     __APP_VERSION__: JSON.stringify(version),
+    __APP_BUILD__: JSON.stringify(build),
   },
   plugins: [
     react(),
     {
       name: 'emit-version',
       generateBundle() {
-        this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ version }) })
+        this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ version, build }) })
       },
     },
   ],

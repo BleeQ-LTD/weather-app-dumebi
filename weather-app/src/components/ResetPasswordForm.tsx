@@ -94,9 +94,7 @@ export default function ResetPasswordForm({
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-screen">
-        <div className="auth-card">
+    <div className="auth-panel">
           <div className="auth-brand">
             <h1>
               {success ? "Password updated" : "Create a new password"}
@@ -207,8 +205,6 @@ export default function ResetPasswordForm({
               Back to sign in
             </button>
           )}
-        </div>
-      </section>
-    </main>
+    </div>
   );
 }

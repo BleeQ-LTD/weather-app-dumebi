@@ -4,6 +4,8 @@ import AccountPanel from "./AccountPanel";
 import BottomSheet from "./BottomSheet";
 import FavouritesPanel from "./FavouritesPanel";
 import { CompareIcon, GearIcon, PinIcon, UserIcon } from "./Icons";
+import Avatar from "./Avatar";
+import { fullName } from "../utils/accountDisplay";
 import type { Location } from "../locationService/locationTypes";
 import type { AppNavProps } from "./navTypes";
 import StarIcon from "./StarIcon";
@@ -50,6 +52,9 @@ function BottomBar({
   onChangeDistanceUnit,
   appVersion,
   onOpenWhatsNew,
+  accountPhoto,
+  accountFirstName,
+  accountLastName,
   onChangeUnit,
   onSelect,
   compareOpen,
@@ -99,7 +104,14 @@ function BottomBar({
           <BarItem icon={<UserIcon />} label="Sign in" onClick={onRequestSignIn} />
         ) : (
           <BarItem
-            icon={<UserIcon />}
+            icon={
+              <Avatar
+                user={user}
+                photo={accountPhoto}
+                name={fullName(accountFirstName, accountLastName)}
+                size={24}
+              />
+            }
             label="Account"
             aria-haspopup="dialog"
             onClick={() => setSheet("account")}
@@ -142,6 +154,7 @@ function BottomBar({
         <BottomSheet label="Account" onClose={closeSheet}>
           <AccountPanel
             user={user}
+            name={fullName(accountFirstName, accountLastName)}
             onOpenProfile={onOpenProfile}
             onSignOut={onSignOut}
             onDone={closeSheet}

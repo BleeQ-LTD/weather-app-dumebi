@@ -4,9 +4,13 @@ import { accountService } from "../firebaseService/accountService";
 
 type Props = {
   onBack: () => void;
+  backLabel?: string;
 };
 
-export default function ForgotPasswordForm({ onBack }: Props) {
+export default function ForgotPasswordForm({
+  onBack,
+  backLabel = "Back to sign in",
+}: Props) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -34,9 +38,7 @@ export default function ForgotPasswordForm({ onBack }: Props) {
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-screen">
-        <div className="auth-card">
+    <div className="auth-panel">
           <div className="auth-brand">
             <h1>Forgot your password?</h1>
             <p className="muted">
@@ -58,7 +60,7 @@ export default function ForgotPasswordForm({ onBack }: Props) {
                 type="button"
                 onClick={onBack}
               >
-                Return to sign in
+                {backLabel}
               </button>
               <button
                 className="btn btn-secondary"
@@ -99,12 +101,10 @@ export default function ForgotPasswordForm({ onBack }: Props) {
                 type="button"
                 onClick={onBack}
               >
-                Back to sign in
+                {backLabel}
               </button>
             </form>
           )}
-        </div>
-      </section>
-    </main>
+    </div>
   );
 }
