@@ -1926,3 +1926,72 @@ button:disabled {
   flex: none;
   color: var(--muted);
 }
+
+/* ---------- Profile picture (top of the profile overlay) ---------- */
+.profile-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.profile-photo-button {
+  position: relative;
+  border-radius: 50%;
+  outline-offset: 4px;
+}
+
+.profile-photo-button:disabled {
+  opacity: 0.7;
+}
+
+.profile-photo-button .avatar {
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  border-radius: 50%;
+  object-fit: cover;
+  font-weight: var(--fw-semibold);
+  background: var(--accent-strong);
+  color: var(--on-accent);
+  box-shadow: 0 0 0 3px var(--surface-strong);
+}
+
+.profile-photo-badge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--page-bg);
+  background: var(--accent-strong);
+  color: var(--on-accent);
+}
+
+.profile-photo-button:hover .profile-photo-badge {
+  background: var(--accent-strong-hover);
+}
+
+.profile-photo-remove {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.profile-photo-remove:hover {
+  color: var(--danger);
+}
+
+/* Initials sit in the middle of every avatar circle (sidebar, bottom bar) */
+span.avatar {
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+}
