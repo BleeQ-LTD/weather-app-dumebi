@@ -171,6 +171,40 @@ The command prints your live URL (`https://<project-id>.web.app`). Firebase Host
 3. Add the six `VITE_FIREBASE_*` variables in the site settings.
 4. After the first deploy, add the site's domain under **Firebase console → Authentication → Settings → Authorized domains**.
 
+## Releasing a new version
+
+Open tabs are told when a new version is live, with **Reload** / **Later** and
+the release notes. The notes come from Firebase Remote Config; whether the new
+build is actually live comes from `version.json`, which every build writes.
+
+**One-time setup**
+
+1. Firebase console → Remote Config → **Add parameter**: name `version_history`,
+   data type **JSON**, default value = the list below. **Publish changes**.
+2. Enable the [Firebase Remote Config Realtime API](https://console.cloud.google.com/apis/library/firebaseremoteconfigrealtime.googleapis.com)
+   for the project, so the prompt appears within seconds. Without it, open tabs
+   still find out within 5 minutes, or when the tab comes back into view.
+
+**Every release**
+
+1. Bump `version` in `package.json` (e.g. `1.0.0` → `1.1.0`) and deploy.
+2. In the console, open `version_history`, add the new entry at the **top**,
+   and **Publish changes**:
+
+```json
+[
+  { "version": "1.1.0", "date": "2026-12-04", "notes": ["What changed, in a few words"] },
+  { "version": "1.0.0", "date": "2026-11-27", "notes": ["Compare two cities", "Wind, distance and rain units", "Edit your profile details"] }
+]
+```
+
+- The order of the two steps doesn't matter: nobody is prompted until the new
+  files are live.
+- Forget the console entry and people still get a plain "A new version is
+  available" (without notes).
+- Malformed JSON is ignored with a console warning; it never breaks the app.
+- Settings shows "Version x.y.z · What's new" with the full history.
+
 ## Data model
 
 ```text
