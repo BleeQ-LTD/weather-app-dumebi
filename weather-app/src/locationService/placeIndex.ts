@@ -117,6 +117,36 @@ export function searchIndex(
   return results;
 }
 
+// The nearest city (not state or country) within maxKm, labelled
+// "City, Country". Used to name "My Location" when the lookup service fails.
+export function nearestCity(
+  index: IndexedPlace[],
+  latitude: number,
+  longitude: number,
+  maxKm = 50
+): { name: string; countryCode: string } | null {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  let best: IndexedPlace | null = null;
+  let bestKm = Infinity;
+
+  for (const place of index) {
+    if (place.kind !== "city") continue;
+    const dLat = toRad(place.latitude - latitude);
+    const dLon = toRad(place.longitude - longitude);
+    const h =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(latitude)) * Math.cos(toRad(place.latitude)) * Math.sin(dLon / 2) ** 2;
+    const km = 2 * 6371 * Math.asin(Math.sqrt(h));
+    if (km < bestKm) {
+      bestKm = km;
+      best = place;
+    }
+  }
+
+  if (!best || bestKm > maxKm) return null;
+  return { name: makePlace(best.name, best.countryCode).name, countryCode: best.countryCode };
+}
+
 // ---------- Loading (once per page) ----------
 
 let loading: Promise<IndexedPlace[]> | null = null;

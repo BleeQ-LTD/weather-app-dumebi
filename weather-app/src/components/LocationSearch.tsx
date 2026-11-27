@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { useBackButtonClose } from "../hooks/useBackButtonClose";
 import { searchPlaces } from "../locationService/locationService";
 import {
   loadPlaceIndex,
@@ -6,9 +8,17 @@ import {
   type IndexedPlace,
 } from "../locationService/placeIndex";
 import type { Location, PlaceSuggestion } from "../locationService/locationTypes";
+import {
+  addRecentSearch,
+  clearRecentSearches,
+  getRecentSearches,
+  type RecentSearch,
+} from "../utils/recentSearches";
 
 interface LocationSearchProps {
   onSelect: (location: Location) => void;
+  placeholder?: string;
+  label?: string;
 }
 
 // Open-Meteo only matches from 3 characters (fallback search only).
@@ -16,8 +26,18 @@ const FALLBACK_MIN_LENGTH = 3;
 
 const KIND_TAGS = { state: "State", country: "Country" } as const;
 
-function LocationSearch({ onSelect }: LocationSearchProps) {
+function LocationSearch({
+  onSelect,
+  placeholder = "Search for a city",
+  label = "Search for a city",
+}: LocationSearchProps) {
   const [query, setQuery] = useState("");
+  // Clicking the blur (or Back) hides the suggestions until the text changes
+  const [dismissedFor, setDismissedFor] = useState<string | null>(null);
+
+  // Recent searches: shown when the box is focused and empty
+  const [focused, setFocused] = useState(false);
+  const [recent, setRecent] = useState<RecentSearch[]>(getRecentSearches);
 
   // Built-in list: loads in the background as soon as the screen opens.
   const [index, setIndex] = useState<IndexedPlace[] | null>(null);
@@ -89,45 +109,139 @@ function LocationSearch({ onSelect }: LocationSearchProps) {
     searched = true;
   }
 
+  const showNoMatches = searched && !error && suggestions.length === 0;
+  const showRecent = focused && !trimmed && recent.length > 0;
+  const hasPanel =
+    showRecent || (Boolean(trimmed) && (suggestions.length > 0 || showNoMatches || Boolean(error)));
+  const open = hasPanel && dismissedFor !== query;
+
+  useBackButtonClose(open, () => setDismissedFor(query));
+
   function handleSelect(suggestion: PlaceSuggestion) {
     onSelect(suggestion.location); // coordinates are already included
+    setRecent(addRecentSearch(suggestion));
     setQuery("");
+    setDismissedFor(null);
     setFallback(null);
     setError("");
+    // Done searching: close the list rather than showing recents again
+    setFocused(false);
+    (document.activeElement as HTMLElement | null)?.blur();
+  }
+
+  function handleSelectRecent(item: RecentSearch, position: number) {
+    handleSelect({ id: position, label: item.label, kind: item.kind, location: item.location });
+  }
+
+  function handleClearRecent() {
+    clearRecentSearches();
+    setRecent([]);
   }
 
   return (
-    <div className="search">
-      <input
-        type="search"
-        className="search-input"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search for a city"
-        aria-label="Search for a city"
-      />
+    <>
+      {open &&
+        createPortal(
+          <div
+            className="search-backdrop"
+            aria-hidden="true"
+            onClick={() => setDismissedFor(query)}
+          />,
+          document.body
+        )}
 
-      {error && trimmed && <p className="error-text">{error}</p>}
+      <div className={open ? "search is-open" : "search"}>
+        <input
+          type="search"
+          className="search-input"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => {
+            // Another search box may have added one since this list was read
+            setRecent(getRecentSearches());
+            setFocused(true);
+            setDismissedFor(null);
+          }}
+          onBlur={(e) => {
+            // Keep the list while focus moves inside it (e.g. tabbing to an item)
+            if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node | null)) {
+              setFocused(false);
+            }
+          }}
+          placeholder={placeholder}
+          aria-label={label}
+          aria-expanded={open}
+        />
 
-      {searched && !error && suggestions.length === 0 && (
-        <p className="muted small">No matches</p>
-      )}
+        {open && (
+          // mousedown would blur the input before the click lands
+          <div className="search-panel" onMouseDown={(e) => e.preventDefault()}>
+            {showRecent && (
+              <div className="search-recent">
+                <div className="search-recent-head">
+                  <span>Recent</span>
+                  <button type="button" className="search-recent-clear" onClick={handleClearRecent}>
+                    Clear
+                  </button>
+                </div>
+                <ul className="search-results">
+                  {recent.map((item, position) => (
+                    <li key={`${item.kind ?? "city"}-${item.label}`}>
+                      <button
+                        type="button"
+                        className="search-result"
+                        onClick={() => handleSelectRecent(item, position)}
+                      >
+                        <span className="search-result-label">
+                          <svg
+                            className="search-recent-icon"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <circle cx="12" cy="12" r="9" />
+                            <polyline points="12 7 12 12 15 14" />
+                          </svg>
+                          {item.label}
+                        </span>
+                        {item.kind && item.kind !== "city" && (
+                          <span className="search-result-tag">{KIND_TAGS[item.kind]}</span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-      {trimmed && suggestions.length > 0 && (
-        <ul className="search-results">
-          {suggestions.map((s) => (
-            <li key={`${s.kind ?? "city"}-${s.id}`}>
-              <button type="button" className="search-result" onClick={() => handleSelect(s)}>
-                <span className="search-result-label">{s.label}</span>
-                {s.kind && s.kind !== "city" && (
-                  <span className="search-result-tag">{KIND_TAGS[s.kind]}</span>
-                )}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+            {error && <p className="error-text search-message">{error}</p>}
+
+            {showNoMatches && <p className="muted small search-message">No matches</p>}
+
+            {suggestions.length > 0 && (
+              <ul className="search-results">
+                {suggestions.map((s) => (
+                  <li key={`${s.kind ?? "city"}-${s.id}`}>
+                    <button type="button" className="search-result" onClick={() => handleSelect(s)}>
+                      <span className="search-result-label">{s.label}</span>
+                      {s.kind && s.kind !== "city" && (
+                        <span className="search-result-tag">{KIND_TAGS[s.kind]}</span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
