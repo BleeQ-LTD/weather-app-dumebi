@@ -29,3 +29,8 @@ export function getInitials(identity: Identity): string {
   const letter = firstCharacter(identity.email?.trim() ?? "");
   return letter ? letter.toUpperCase() : "?";
 }
+
+// "Chukwudumebi" + "Onwusah" -> "Chukwudumebi Onwusah" (blank when neither is set)
+export function fullName(firstName?: string, lastName?: string): string {
+  return [firstName?.trim(), lastName?.trim()].filter(Boolean).join(" ");
+}

@@ -31,7 +31,7 @@ function viewFor(result: EmailLinkResult): View {
 }
 
 function leave(onDone: () => void) {
-  window.history.replaceState(null, "", window.location.pathname);
+  window.history.replaceState(window.history.state, "", window.location.pathname);
   onDone();
 }
 

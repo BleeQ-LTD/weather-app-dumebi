@@ -41,9 +41,7 @@ export default function CompleteProfileForm({ uid, onSaved }: Props) {
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-screen">
-        <div className="auth-card">
+    <div className="auth-panel">
           <div className="auth-brand">
             <div className="auth-icon" aria-hidden="true">
               ⛅
@@ -95,8 +93,6 @@ export default function CompleteProfileForm({ uid, onSaved }: Props) {
               Sign out
             </button>
           </form>
-        </div>
-      </section>
-    </main>
+    </div>
   );
 }
