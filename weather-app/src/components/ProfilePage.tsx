@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import {
   getUserProfile,
+  type ProfileDetails,
   type UserProfile,
 } from "../firebaseService/profileService";
 import { logOut } from "../firebaseService/authService";
@@ -17,7 +18,7 @@ interface ProfilePageProps {
   user: User;
   onBack: () => void;
   // Name changed: lets the app redraw the sidebar's account name
-  onProfileSaved?: () => void;
+  onProfileSaved?: (details: ProfileDetails) => void;
 }
 
 export default function ProfilePage({
@@ -88,15 +89,6 @@ export default function ProfilePage({
           />
         ) : (
     <div className="auth-panel">
-          <div className="auth-brand">
-            <div className="auth-icon" aria-hidden="true">
-              👤
-            </div>
-            <h1>Your Profile</h1>
-            <p className="muted">
-              Update your details and manage your account.
-            </p>
-          </div>
 
           {loading ? (
             <p className="status">Loading your profile...</p>
@@ -107,7 +99,7 @@ export default function ProfilePage({
                 profile={profile}
                 onSaved={(details) => {
                   setProfile((current) => (current ? { ...current, ...details } : current));
-                  onProfileSaved?.();
+                  onProfileSaved?.(details);
                 }}
               />
 

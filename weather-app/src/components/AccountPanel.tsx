@@ -5,16 +5,17 @@ import Button from "./Button";
 
 interface AccountPanelProps {
   user: User;
+  name?: string; // first + last name from the profile
   onOpenProfile?: () => void;
   onSignOut: () => Promise<void>;
   onDone: () => void; // closes the flyout or sheet after an action
 }
 
 // The small menu behind the account row, for signed-in users
-function AccountPanel({ user, onOpenProfile, onSignOut, onDone }: AccountPanelProps) {
+function AccountPanel({ user, name: profileName, onOpenProfile, onSignOut, onDone }: AccountPanelProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const name = getDisplayName(user);
+  const name = profileName?.trim() || getDisplayName(user);
 
   async function handleSignOut() {
     setBusy(true);

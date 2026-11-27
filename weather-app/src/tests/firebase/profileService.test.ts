@@ -1,16 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { docMock, getDocMock, updateDocMock, updateProfileMock } = vi.hoisted(() => ({
+const { docMock, getDocMock, updateDocMock, updateProfileMock, deleteFieldMock } = vi.hoisted(() => ({
   docMock: vi.fn(),
   getDocMock: vi.fn(),
   updateDocMock: vi.fn(),
   updateProfileMock: vi.fn(),
+  deleteFieldMock: vi.fn(() => "DELETE_FIELD"),
 }));
 
 vi.mock("firebase/firestore", () => ({
   doc: docMock,
   getDoc: getDocMock,
   updateDoc: updateDocMock,
+  deleteField: deleteFieldMock,
 }));
 
 // authService is only imported here for AuthError; none of its SDK calls run.
@@ -116,16 +118,19 @@ describe("editing profile details", () => {
   const user = { uid: "g123", displayName: "Old Name" } as unknown as User;
 
   it("checks the same limits as sign-up", () => {
-    expect(validateProfileDetails({ firstName: " ", lastName: "", gender: "female" })).toBe(
+    expect(validateProfileDetails({ firstName: " ", lastName: "", gender: "female", photo: "" })).toBe(
       "First name is required."
     );
-    expect(validateProfileDetails({ firstName: "A".repeat(51), lastName: "", gender: "female" })).toMatch(
+    expect(validateProfileDetails({ firstName: "A".repeat(51), lastName: "", gender: "female", photo: "" })).toMatch(
       /50 characters/
     );
-    expect(validateProfileDetails({ firstName: "Mebi", lastName: "", gender: "" })).toBe(
+    expect(validateProfileDetails({ firstName: "Mebi", lastName: "", gender: "", photo: "" })).toBe(
       "Please select your gender."
     );
-    expect(validateProfileDetails({ firstName: "Mebi", lastName: "", gender: "female" })).toBe("");
+    expect(validateProfileDetails({ firstName: "Mebi", lastName: "", gender: "female", photo: "" })).toBe("");
+    expect(
+      validateProfileDetails({ firstName: "Mebi", lastName: "", gender: "female", photo: "https://evil.example/x.png" })
+    ).toMatch(/picture/);
   });
 
   it("saves trimmed details and updates the account name", async () => {
@@ -135,16 +140,22 @@ describe("editing profile details", () => {
       firstName: "  Dumebi ",
       lastName: " Onwusah ",
       gender: "female",
+      photo: "data:image/jpeg;base64,AAAA",
     });
 
-    expect(saved).toEqual({ firstName: "Dumebi", lastName: "Onwusah", gender: "female" });
+    expect(saved).toEqual({
+      firstName: "Dumebi",
+      lastName: "Onwusah",
+      gender: "female",
+      photo: "data:image/jpeg;base64,AAAA",
+    });
     expect(updateDocMock).toHaveBeenCalledWith(mockUserRef, saved);
     expect(updateProfileMock).toHaveBeenCalledWith(user, { displayName: "Dumebi Onwusah" });
   });
 
   it("does not write anything when the details are invalid", async () => {
     await expect(
-      saveProfileDetails(user, { firstName: "", lastName: "", gender: "female" })
+      saveProfileDetails(user, { firstName: "", lastName: "", gender: "female", photo: "" })
     ).rejects.toBeInstanceOf(AuthError);
     expect(updateDocMock).not.toHaveBeenCalled();
   });
@@ -154,7 +165,18 @@ describe("editing profile details", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     await expect(
-      saveProfileDetails(user, { firstName: "Mebi", lastName: "", gender: "male" })
+      saveProfileDetails(user, { firstName: "Mebi", lastName: "", gender: "male", photo: "" })
     ).resolves.toMatchObject({ firstName: "Mebi" });
+  });
+
+  it("removing the picture deletes the field instead of saving an empty value", async () => {
+    updateProfileMock.mockResolvedValue(undefined);
+    await saveProfileDetails(user, { firstName: "Mebi", lastName: "O", gender: "male", photo: "" });
+    expect(updateDocMock).toHaveBeenCalledWith(mockUserRef, {
+      firstName: "Mebi",
+      lastName: "O",
+      gender: "male",
+      photo: "DELETE_FIELD",
+    });
   });
 });

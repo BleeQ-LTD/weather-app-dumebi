@@ -22,6 +22,10 @@ export interface AppNavProps {
   onChangeDistanceUnit: (unit: DistanceUnit) => void;
   appVersion?: string;
   onOpenWhatsNew?: () => void;
+  accountPhoto?: string; // uploaded profile picture
+  accountFirstName?: string; // shown instead of the email
+  accountLastName?: string;
+
   onSelect: (location: Location) => void;
   compareOpen: boolean;
   onOpenCompare: () => void;

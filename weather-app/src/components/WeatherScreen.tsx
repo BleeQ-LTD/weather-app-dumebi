@@ -44,6 +44,9 @@ interface WeatherScreenProps {
   signInOpen?: boolean;
   appVersion?: string;
   onOpenWhatsNew?: () => void;
+  accountPhoto?: string;
+  accountFirstName?: string;
+  accountLastName?: string;
   onOpenProfile?: () => void;
   onRequestSignIn: () => void;
 }
@@ -54,6 +57,9 @@ function WeatherScreen({
   signInOpen = false,
   appVersion,
   onOpenWhatsNew,
+  accountPhoto,
+  accountFirstName,
+  accountLastName,
   onRequestSignIn,
   onOpenProfile
 }: WeatherScreenProps) {
@@ -217,6 +223,9 @@ function WeatherScreen({
     onChangeDistanceUnit: changeDistanceUnit,
     appVersion,
     onOpenWhatsNew,
+    accountPhoto,
+    accountFirstName,
+    accountLastName,
     onSelect: handleSelect,
     compareOpen,
     onOpenCompare: () => setCompareOpen(true),

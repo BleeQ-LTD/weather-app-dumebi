@@ -12,6 +12,7 @@ import Overlay from "./components/Overlay";
 import ProfileGateOverlay from "./components/ProfileGate";
 import { useProfileStatus } from "./hooks/useProfileStatus";
 import { useAppUpdate } from "./hooks/useAppUpdate";
+import { useAccountPhoto } from "./hooks/useAccountPhoto";
 import UpdateBanner from "./components/UpdateBanner";
 import WhatsNew from "./components/WhatsNew";
 
@@ -65,6 +66,8 @@ function App() {
   const openSignIn = useCallback(() => setOverlay("signIn"), []);
 
   const signedIn = authReady ? user : null;
+  // First name and picture for the sidebar / bottom-bar account row
+  const account = useAccountPhoto(signedIn);
 
   return (
     <>
@@ -74,6 +77,9 @@ function App() {
         signInOpen={overlay === "signIn"}
         onRequestSignIn={openSignIn}
         onOpenProfile={() => setOverlay("profile")}
+        accountPhoto={account.photo}
+        accountFirstName={account.firstName}
+        accountLastName={account.lastName}
         appVersion={update.currentVersion}
         onOpenWhatsNew={update.history.length > 0 ? () => setOverlay("whatsNew") : undefined}
       />
@@ -89,7 +95,18 @@ function App() {
       {overlay === "signIn" && !signedIn && <AuthGate onClose={close} />}
 
       {overlay === "profile" && signedIn && (
-        <ProfilePage user={signedIn} onBack={close} onProfileSaved={redraw} />
+        <ProfilePage
+          user={signedIn}
+          onBack={close}
+          onProfileSaved={(details) => {
+            account.update({
+              photo: details.photo,
+              firstName: details.firstName,
+              lastName: details.lastName,
+            });
+            redraw();
+          }}
+        />
       )}
 
       {overlay === "reset" && (

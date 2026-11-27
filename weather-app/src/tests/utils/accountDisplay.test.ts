@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getDisplayName, getInitials } from "../../utils/accountDisplay";
+import { fullName, getDisplayName, getInitials } from "../../utils/accountDisplay";
 
 describe("TC-UI-004 account row name and avatar initials", () => {
   it("shows the display name when there is one", () => {
@@ -32,5 +32,19 @@ describe("TC-UI-004 account row name and avatar initials", () => {
 
   it("does not split an emoji in half", () => {
     expect(getInitials({ displayName: "😀 Smith", email: null })).toBe("😀S");
+  });
+});
+
+describe("profile name for the account row and initials", () => {
+  it("joins first and last name, skipping blanks", () => {
+    expect(fullName("Chukwudumebi", "Onwusah")).toBe("Chukwudumebi Onwusah");
+    expect(fullName(" Mebi ", "")).toBe("Mebi");
+    expect(fullName("", "")).toBe("");
+    expect(fullName(undefined, undefined)).toBe("");
+  });
+
+  it("gives name initials instead of the email's first letter", () => {
+    expect(getInitials({ displayName: fullName("Chukwudumebi", "Onwusah"), email: "dumebionwusah@gmail.com" })).toBe("CO");
+    expect(getInitials({ displayName: fullName("", ""), email: "dumebionwusah@gmail.com" })).toBe("D");
   });
 });
