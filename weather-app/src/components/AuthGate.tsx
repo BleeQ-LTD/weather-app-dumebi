@@ -1,5 +1,7 @@
-import { useState, type ComponentProps } from "react";
+import { useState } from "react";
 import AuthScreen from "./AuthScreen";
+import Overlay from "./Overlay";
+import AnimatedSwap from "./AnimatedSwap";
 import EmailLinkForm from "./EmailLinkForm";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import {
@@ -11,7 +13,13 @@ import type { GoogleAuthMode } from "../firebaseService/authService";
 
 type AuthView = "main" | "forgot" | "emailLink";
 
-function AuthGate(props: ComponentProps<typeof AuthScreen>) {
+interface AuthGateProps {
+  onClose: () => void; // back to the weather (also "Continue as guest")
+}
+
+// The sign-in overlay. Sign in / Forgot password / Email link swap inside the
+// same card.
+function AuthGate({ onClose }: AuthGateProps) {
   const [view, setView] = useState<AuthView>("main");
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState("");
@@ -37,34 +45,27 @@ function AuthGate(props: ComponentProps<typeof AuthScreen>) {
     }
   }
 
-  if (view === "forgot") {
-    return (
-      <div className="auth-page">
-        <ForgotPasswordForm onBack={() => setView("main")} />
-      </div>
-    );
-  }
-
-  if (view === "emailLink") {
-    return (
-      <div className="auth-page">
-        <EmailLinkForm onBack={() => setView("main")} />
-      </div>
-    );
-  }
+  const title =
+    view === "forgot" ? "Forgot password" : view === "emailLink" ? "Email link sign-in" : "Sign in";
 
   return (
-    <div className="auth-layout">
-      <div className="auth-widget">
-        <AuthScreen
-          {...props}
-          onForgotPassword={() => setView("forgot")}
-          onGoogleSignIn={handleGoogleSignIn}
-          googleBusy={googleBusy}
-          googleError={googleError}
-        />
-      </div>
-    </div>
+    <Overlay label={title} onClose={onClose}>
+      <AnimatedSwap viewKey={view}>
+        {view === "forgot" ? (
+          <ForgotPasswordForm onBack={() => setView("main")} />
+        ) : view === "emailLink" ? (
+          <EmailLinkForm onBack={() => setView("main")} />
+        ) : (
+          <AuthScreen
+            onContinueAsGuest={onClose}
+            onForgotPassword={() => setView("forgot")}
+            onGoogleSignIn={handleGoogleSignIn}
+            googleBusy={googleBusy}
+            googleError={googleError}
+          />
+        )}
+      </AnimatedSwap>
+    </Overlay>
   );
 }
 

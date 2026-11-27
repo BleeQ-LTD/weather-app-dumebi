@@ -6,6 +6,7 @@ import {
   signUp,
 } from "../firebaseService/authService";
 import type { GoogleAuthMode } from "../firebaseService/authService";
+import { isGoogleOnlyAccount } from "../firebaseService/signInMethods";
 
 type Mode = "signIn" | "signUp";
 
@@ -37,16 +38,23 @@ function AuthScreen({
   const [signUpPassword, setSignUpPassword] = useState("");
 
   const [error, setError] = useState("");
+  // Failed email sign-in on an account that only uses Google: point them to
+  // "Sign in with Google" and "Set a password" (checked by our server).
+  const [showGoogleHint, setShowGoogleHint] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   function switchMode(next: Mode) {
     setMode(next);
     setError("");
+    setShowGoogleHint(false);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // Kept now: React clears event.currentTarget once the first await runs
+    const form = event.currentTarget;
     setError("");
+    setShowGoogleHint(false);
     setSubmitting(true);
 
     try {
@@ -96,15 +104,28 @@ function AuthScreen({
         (err as { code?: string }).code,
         err
       );
+      const code = (err as { code?: string }).code ?? "";
       setError(getAuthErrorMessage(err));
+
+      const wrongCredentials = [
+        "auth/invalid-credential",
+        "auth/wrong-password",
+        "auth/user-not-found",
+      ].includes(code);
+
+      if (mode === "signIn" && wrongCredentials) {
+        const email =
+          signInEmail.trim() ||
+          String(new FormData(form).get("username") ?? "").trim();
+        setShowGoogleHint(await isGoogleOnlyAccount(email));
+      }
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="auth-screen">
-      <div className="auth-card">
+    <div className="auth-panel">
         <div className="auth-brand">
           <div className="auth-icon" aria-hidden="true">
             ⛅
@@ -268,6 +289,16 @@ function AuthScreen({
             </p>
           )}
 
+          {showGoogleHint && (
+            <div className="auth-google-hint" role="note">
+              <strong>Signed up with Google?</strong>
+              <span className="muted">
+                Use “Sign in with Google” below, then open your profile and
+                choose “Set a password” to sign in with your email too.
+              </span>
+            </div>
+          )}
+
           <button
             type="submit"
             className="btn btn-primary"
@@ -332,7 +363,6 @@ function AuthScreen({
             Favourite locations are only saved to an account.
           </p>
         </div>
-      </div>
     </div>
   );
 }

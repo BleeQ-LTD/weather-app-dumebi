@@ -2,26 +2,36 @@
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import {
-  GENDER_OPTIONS,
   getUserProfile,
   type UserProfile,
 } from "../firebaseService/profileService";
 import { logOut } from "../firebaseService/authService";
 import ForgotPasswordForm from "./ForgotPasswordForm";
+import Overlay from "./Overlay";
+import AnimatedSwap from "./AnimatedSwap";
+import SetPasswordForm from "./SetPasswordForm";
+import ProfileDetailsForm from "./ProfileDetailsForm";
+import { hasPassword } from "../firebaseService/passwordLink";
 
 interface ProfilePageProps {
   user: User;
   onBack: () => void;
+  // Name changed: lets the app redraw the sidebar's account name
+  onProfileSaved?: () => void;
 }
 
 export default function ProfilePage({
   user,
   onBack,
+  onProfileSaved,
 }: ProfilePageProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  // "profile", "forgot" (has a password) or "setPassword" (Google-only account)
+  const [view, setView] = useState<"profile" | "forgot" | "setPassword">("profile");
+  // Google-only accounts have no password until they set one here
+  const [passwordSet, setPasswordSet] = useState(() => hasPassword(user));
 
   useEffect(() => {
     let active = true;
@@ -62,25 +72,29 @@ export default function ProfilePage({
     }
   }
 
-  if (showForgotPassword) {
-    return (
-      <ForgotPasswordForm
-        onBack={() => setShowForgotPassword(false)}
-      />
-    );
-  }
-
   return (
-    <main className="auth-page">
-      <section className="auth-screen">
-        <div className="auth-card">
+    <Overlay label="Your profile" onClose={onBack}>
+      <AnimatedSwap viewKey={view}>
+        {view === "forgot" ? (
+          <ForgotPasswordForm
+            onBack={() => setView("profile")}
+            backLabel="Back to profile"
+          />
+        ) : view === "setPassword" ? (
+          <SetPasswordForm
+            user={user}
+            onBack={() => setView("profile")}
+            onDone={() => setPasswordSet(true)}
+          />
+        ) : (
+    <div className="auth-panel">
           <div className="auth-brand">
             <div className="auth-icon" aria-hidden="true">
               👤
             </div>
             <h1>Your Profile</h1>
             <p className="muted">
-              Manage your account and weather preferences.
+              Update your details and manage your account.
             </p>
           </div>
 
@@ -88,45 +102,14 @@ export default function ProfilePage({
             <p className="status">Loading your profile...</p>
           ) : (
             <div className="auth-form">
-              <div className="field">
-                <label>First name</label>
-                <input
-                  type="text"
-                  value={profile?.firstName || "Not provided"}
-                  readOnly
-                />
-              </div>
-
-              <div className="field">
-                <label>Last name</label>
-                <input
-                  type="text"
-                  value={profile?.lastName || "Not provided"}
-                  readOnly
-                />
-              </div>
-
-              <div className="field">
-                <label>Gender</label>
-                <input
-                  type="text"
-                  value={
-                    GENDER_OPTIONS.find(
-                      (option) => option.value === profile?.gender,
-                    )?.label || "Not provided"
-                  }
-                  readOnly
-                />
-              </div>
-
-              <div className="field">
-                <label>Email address</label>
-                <input
-                  type="email"
-                  value={user.email || "Not available"}
-                  readOnly
-                />
-              </div>
+              <ProfileDetailsForm
+                user={user}
+                profile={profile}
+                onSaved={(details) => {
+                  setProfile((current) => (current ? { ...current, ...details } : current));
+                  onProfileSaved?.();
+                }}
+              />
 
               {error && (
                 <p className="error-text" role="alert">
@@ -134,13 +117,28 @@ export default function ProfilePage({
                 </p>
               )}
 
-              <button
-                type="button"
-                className="auth-forgot-link"
-                onClick={() => setShowForgotPassword(true)}
-              >
-                Forgot password?
-              </button>
+              {passwordSet ? (
+                <button
+                  type="button"
+                  className="auth-forgot-link"
+                  onClick={() => setView("forgot")}
+                >
+                  Forgot password?
+                </button>
+              ) : (
+                <div className="profile-set-password">
+                  <p className="muted small">
+                    You sign in with Google. Add a password to also sign in with your email.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setView("setPassword")}
+                  >
+                    Set a password
+                  </button>
+                </div>
+              )}
 
               <button
                 type="button"
@@ -159,8 +157,9 @@ export default function ProfilePage({
               </button>
             </div>
           )}
-        </div>
-      </section>
-    </main>
+    </div>
+        )}
+      </AnimatedSwap>
+    </Overlay>
   );
 }

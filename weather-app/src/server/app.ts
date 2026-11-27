@@ -3,6 +3,13 @@ import type { NextFunction, Request, Response } from "express";
 import { isValidEmail, requestPasswordReset } from "./passwordReset.js";
 import type { PasswordResetDeps } from "./passwordReset.js";
 import { createRateLimiter } from "./rateLimiter.js";
+import { isGoogleOnlyAccount } from "./signInMethods.js";
+import type { ProviderLookup } from "./signInMethods.js";
+
+export interface AppDeps extends PasswordResetDeps {
+  // For the "Signed up with Google?" tip after a failed sign-in
+  lookupProviders?: ProviderLookup;
+}
 
 function statusOf(error: unknown): number {
   if (typeof error === "object" && error !== null && "status" in error) {
@@ -43,7 +50,7 @@ function errorHandler(
     .json({ message: "We couldn't send the email. Please try again." });
 }
 
-export function createApp(deps: PasswordResetDeps) {
+export function createApp(deps: AppDeps) {
   const app = express();
 
   app.use(express.json({ limit: "10kb" }));
@@ -94,6 +101,29 @@ export function createApp(deps: PasswordResetDeps) {
       if (validEmail) allowPerEmail.release(email);
       throw error;
     }
+  });
+
+  // After a failed email + password sign-in: is this a Google-only account?
+  // This tells the caller whether an email is registered (with Google), so
+  // it is rate-limited per address.
+  const allowLookupPerIp = createRateLimiter(10, 15 * 60 * 1000);
+
+  app.post("/api/sign-in-methods", async (req, res) => {
+    if (!allowLookupPerIp(req.ip ?? "unknown")) {
+      res
+        .status(429)
+        .json({ message: "Too many requests. Please try again later." });
+      return;
+    }
+
+    const email = typeof req.body?.email === "string" ? req.body.email : "";
+
+    if (!deps.lookupProviders) {
+      res.json({ googleOnly: false });
+      return;
+    }
+
+    res.json({ googleOnly: await isGoogleOnlyAccount(email, deps.lookupProviders) });
   });
 
   app.use(errorHandler);

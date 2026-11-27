@@ -1,6 +1,6 @@
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
-import { createResetLinkGenerator } from "./firebaseAdmin.js";
+import { createProviderLookup, createResetLinkGenerator } from "./firebaseAdmin.js";
 import { createSendByteMailer } from "./sendbyte.js";
 
 const config = loadConfig();
@@ -8,6 +8,7 @@ const config = loadConfig();
 const app = createApp({
   appOrigin: config.appOrigin,
   generateLink: createResetLinkGenerator(config.firebaseServiceAccount),
+  lookupProviders: createProviderLookup(config.firebaseServiceAccount),
   sendMail: createSendByteMailer({
     apiKey: config.sendbyteApiKey,
     from: config.mailFrom,
